@@ -9,7 +9,7 @@
 static Service g_btdrvSrv;
 static SharedMemory g_btdrvSharedmem;
 static bool g_sharedmemInitialised = false;
-static BluetoothCircularBuffer *g_hidCircularBuffer = NULL;
+static BluetoothCircularBuffer *g_btdrvCircularBuffer = NULL;
 
 NX_GENERATE_SERVICE_GUARD(btdrv);
 
@@ -300,7 +300,7 @@ Result btdrvRegisterHidReportEvent(Event *event)
                 shmemLoadRemote(&g_btdrvSharedmem, shmemHandle, BLUETOOTH_SHAREDMEM_SIZE, Perm_Rw);
                 rc = shmemMap(&g_btdrvSharedmem);
                 if (R_SUCCEEDED(rc)) {
-                    g_hidCircularBuffer = (BluetoothCircularBuffer *)btdrvGetSharedmemAddr();
+                    g_btdrvCircularBuffer = (BluetoothCircularBuffer *)btdrvGetSharedmemAddr();
                     g_sharedmemInitialised = true;
                 }
             }
@@ -321,7 +321,7 @@ Result btdrvHidGetReportEventInfo(HidEventType *type, u8 *buffer, u16 length)
     else {
         u32 eventType;
         HidEventData *eventData = (HidEventData *)buffer; 
-        HidReportDataPacket *packet = (HidReportDataPacket *)ReadBuffer(g_hidCircularBuffer);
+        HidReportDataPacket *packet = (HidReportDataPacket *)ReadBuffer(g_btdrvCircularBuffer);
               
         while (true) {
             if (packet == NULL) {
@@ -342,8 +342,8 @@ Result btdrvHidGetReportEventInfo(HidEventType *type, u8 *buffer, u16 length)
                 break;
             }
             
-            FreeBuffer(g_hidCircularBuffer);
-            packet = (HidReportDataPacket *)ReadBuffer(g_hidCircularBuffer);
+            FreeBuffer(g_btdrvCircularBuffer);
+            packet = (HidReportDataPacket *)ReadBuffer(g_btdrvCircularBuffer);
         }
 
         switch (eventType) {
@@ -377,7 +377,7 @@ Result btdrvHidGetReportEventInfo(HidEventType *type, u8 *buffer, u16 length)
                 break;
         }
         
-        FreeBuffer(g_hidCircularBuffer);
+        FreeBuffer(g_btdrvCircularBuffer);
         return 0;
     }
 }
