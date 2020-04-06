@@ -21,6 +21,35 @@ typedef enum  {
 } BluetoothEventType;
 
 typedef enum  {
+    BluetoothStatus_Success,
+    BluetoothStatus_Fail,
+    BluetoothStatus_NotReady,
+    BluetoothStatus_NoMemory,
+    BluetoothStatus_Busy,
+    BluetoothStatus_Done,
+    BluetoothStatus_Unsupported,
+    BluetoothStatus_ParameterInvalid,
+    BluetoothStatus_Unhandled,
+    BluetoothStatus_AuthenticationFailure,
+    BluetoothStatus_RemoteDeviceDown,
+    BluetoothStatus_AuthenticationRejected,
+    BluetoothStatus_JniEnvironmentError,
+    BluetoothStatus_JniThreadAttachError,
+    BluetoothStatus_WakelockError
+} BluetoothStatus;
+
+typedef enum {
+    BluetoothDiscoveryState_Stopped,
+    BluetoothDiscoveryState_Started
+} BluetoothDiscoveryState;
+
+typedef enum {
+    BluetoothBondState_None,
+    BluetoothBondState_Bonding,
+    BluetoothBondState_Bonded
+} BluetoothBondState;
+
+typedef enum  {
     BluetoothProperty_BdName                    = 0x1,
     BluetoothProperty_BdAddress,
     BluetoothProperty_Uuids,
