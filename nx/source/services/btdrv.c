@@ -217,7 +217,6 @@ Result btdrvHidSetReport(const BluetoothAddress *address, HidReportType type, co
     const struct {
         BluetoothAddress address;
         HidReportType type;
-        // Maybe 2 bytes of padding?
     } in = { *address, type};
 
     return serviceDispatchIn(&g_btdrvSrv, 21, in,
