@@ -274,8 +274,7 @@ Result btdrvHidGetEventInfo(HidEventType *type, u8 *buffer, u16 length) {
     );
 }
 
-Result btdrvRegisterHidReportEvent(Event *event)
-{
+Result btdrvRegisterHidReportEvent(Event *event) {
     Result rc;
     Handle eventHandle = INVALID_HANDLE;
 
