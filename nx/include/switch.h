@@ -115,6 +115,10 @@ extern "C" {
 #include "switch/services/ldn.h"
 #include "switch/services/news.h"
 #include "switch/services/btdrv.h"
+#include "switch/services/btm.h"
+#include "switch/services/btmdbg.h"
+#include "switch/services/btmsys.h"
+#include "switch/services/btmu.h"
 
 #include "switch/display/binder.h"
 #include "switch/display/parcel.h"
