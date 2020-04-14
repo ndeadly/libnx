@@ -270,7 +270,7 @@ Result btdrvSetHidReport(const BluetoothAddress *address, HidReportType type, co
 /// Send get report to device.
 Result btdrvGetHidReport(const BluetoothAddress *address, HidReportType type, u8 id);
 /// Wake up bluetooth device.
-Result btdrvTriggerConnection(const BluetoothAddress *address);
+Result btdrvTriggerConnection(const BluetoothAddress *address, u16 unknown);
 /// Register paired device with bluetooth driver.
 Result btdrvAddPairedDeviceInfo(const BluetoothDevice *device);
 /// Retrieve device registered with bluetooth driver.

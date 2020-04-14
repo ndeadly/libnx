@@ -235,13 +235,23 @@ Result btdrvGetHidReport(const BluetoothAddress *address, HidReportType type, u8
     return serviceDispatchIn(&g_btdrvSrv, 22, in);
 }
 
-Result btdrvTriggerConnection(const BluetoothAddress *address)
-{
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
+Result btdrvTriggerConnection(const BluetoothAddress *address, u16 unknown) {
+    if (hosversionBefore(9, 0, 0)) {
+        const struct {
+            BluetoothAddress address;
+        } in = { *address };
 
-    return serviceDispatchIn(&g_btdrvSrv, 23, in);
+        return serviceDispatchIn(&g_btdrvSrv, 23, in);
+    }
+    else {
+        const struct {
+            BluetoothAddress address;
+            u16 unknown;
+        } in = { *address, unknown };
+
+        return serviceDispatchIn(&g_btdrvSrv, 23, in);
+    }
+
 }
 
 Result btdrvAddPairedDeviceInfo(const BluetoothDevice *device) {
