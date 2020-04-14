@@ -54,7 +54,7 @@ Result btdrvDisableBluetooth(void) {
     return serviceDispatch(&g_btdrvSrv, 3);
 }
 
-Result btdrvCleanupBluetooth(void) {
+Result btdrvFinalizeBluetooth(void) {
     return serviceDispatch(&g_btdrvSrv, 4);
 }
 
@@ -87,11 +87,11 @@ Result btdrvSetAdapterProperty(BluetoothPropertyType type, const u8 *value, u16 
     );
 }
 
-Result btdrvStartDiscovery(void) {
+Result btdrvStartInquiry(void) {
     return serviceDispatch(&g_btdrvSrv, 8);
 }
 
-Result btdrvCancelDiscovery(void) {
+Result btdrvStopInquiry(void) {
     return serviceDispatch(&g_btdrvSrv, 9);
 }
 
@@ -133,7 +133,7 @@ Result btdrvCancelBond(const BluetoothAddress *address) {
     return serviceDispatchIn(&g_btdrvSrv, 12, in);
 }
 
-Result btdrvPinReply(const BluetoothAddress *address, bool accept, const BluetoothPinCode *pincode, u8 length) {
+Result btdrvRespondToPinRequest(const BluetoothAddress *address, bool accept, const BluetoothPinCode *pincode, u8 length) {
     const struct {
         BluetoothAddress    address;
         bool                accept;
@@ -144,7 +144,7 @@ Result btdrvPinReply(const BluetoothAddress *address, bool accept, const Bluetoo
     return serviceDispatchIn(&g_btdrvSrv, 13, in);
 }
 
-Result btdrvSspReply(const BluetoothAddress *address, BluetoothSspVariant variant, bool accept, u32 passkey) {
+Result btdrvRespondToSspRequest(const BluetoothAddress *address, BluetoothSspVariant variant, bool accept, u32 passkey) {
     const struct {
         BluetoothAddress    address;
         u8                  variant;
@@ -175,7 +175,7 @@ Result btdrvInitializeHid(Event *event, u16 version) {
     return rc;
 }
 
-Result btdrvHidConnect(const BluetoothAddress *address) {
+Result btdrvOpenHidConnection(const BluetoothAddress *address) {
     const struct {
         BluetoothAddress address;
     } in = { *address };
@@ -183,7 +183,7 @@ Result btdrvHidConnect(const BluetoothAddress *address) {
     return serviceDispatchIn(&g_btdrvSrv, 17, in);
 }
 
-Result btdrvHidDisconnect(const BluetoothAddress *address) {
+Result btdrvCloseHidConnection(const BluetoothAddress *address) {
     const struct {
         BluetoothAddress address;
     } in = { *address };
@@ -191,7 +191,7 @@ Result btdrvHidDisconnect(const BluetoothAddress *address) {
     return serviceDispatchIn(&g_btdrvSrv, 18, in);
 }
 
-Result btdrvHidSendData(const BluetoothAddress *address, const BluetoothHidData *data) {
+Result btdrvWriteHidData(const BluetoothAddress *address, const BluetoothHidData *data) {
     const struct {
         BluetoothAddress address;
     } in = { *address };
@@ -202,7 +202,7 @@ Result btdrvHidSendData(const BluetoothAddress *address, const BluetoothHidData 
     );
 }
 
-Result btdrvHidSendData2(const BluetoothAddress *address, const u8 *buffer, u16 length) {
+Result btdrvWriteHidData2(const BluetoothAddress *address, const u8 *buffer, u16 length) {
     const struct {
         BluetoothAddress address;
     } in = { *address };
@@ -213,7 +213,7 @@ Result btdrvHidSendData2(const BluetoothAddress *address, const u8 *buffer, u16 
     );
 }
 
-Result btdrvHidSetReport(const BluetoothAddress *address, HidReportType type, const BluetoothHidData *data) {
+Result btdrvSetHidReport(const BluetoothAddress *address, HidReportType type, const BluetoothHidData *data) {
     const struct {
         BluetoothAddress address;
         HidReportType type;
@@ -225,7 +225,7 @@ Result btdrvHidSetReport(const BluetoothAddress *address, HidReportType type, co
     );
 }
 
-Result btdrvHidGetReport(const BluetoothAddress *address, HidReportType type, u8 id) {
+Result btdrvGetHidReport(const BluetoothAddress *address, HidReportType type, u8 id) {
     const struct {
         BluetoothAddress address;
         HidReportType type;
@@ -235,7 +235,7 @@ Result btdrvHidGetReport(const BluetoothAddress *address, HidReportType type, u8
     return serviceDispatchIn(&g_btdrvSrv, 22, in);
 }
 
-Result btdrvHidWakeController(const BluetoothAddress *address)
+Result btdrvTriggerConnection(const BluetoothAddress *address)
 {
     const struct {
         BluetoothAddress address;
@@ -244,14 +244,14 @@ Result btdrvHidWakeController(const BluetoothAddress *address)
     return serviceDispatchIn(&g_btdrvSrv, 23, in);
 }
 
-Result btdrvHidAddPairedDevice(const BluetoothDevice *device) {
+Result btdrvAddPairedDeviceInfo(const BluetoothDevice *device) {
     return serviceDispatch(&g_btdrvSrv, 24,
         .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_In },
         .buffers = { {device, sizeof(BluetoothDevice)} }
     );
 }
 
-Result btdrvHidGetPairedDevice(const BluetoothAddress *address, BluetoothDevice *device) {
+Result btdrvGetPairedDeviceInfo(const BluetoothAddress *address, BluetoothDevice *device) {
     const struct {
         BluetoothAddress address;
     } in = { *address };
@@ -262,11 +262,11 @@ Result btdrvHidGetPairedDevice(const BluetoothAddress *address, BluetoothDevice 
     );
 }
 
-Result btdrvCleanupHid(void) {
+Result btdrvFinalizeHid(void) {
     return serviceDispatch(&g_btdrvSrv, 26);
 }
 
-Result btdrvHidGetEventInfo(HidEventType *type, u8 *buffer, u16 length) {
+Result btdrvGetHidEventInfo(HidEventType *type, u8 *buffer, u16 length) {
     return serviceDispatchOut(&g_btdrvSrv, 27, *type,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_Out },
         .buffers = { {buffer, length} }
@@ -308,7 +308,7 @@ Result btdrvRegisterHidReportEvent(Event *event) {
     return rc;
 }
 
-Result btdrvHidGetReportEventInfo(HidEventType *type, u8 *buffer, u16 length)
+Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length)
 {
     if (hosversionBefore(7, 0, 0)) {
         return serviceDispatchOut(&g_btdrvSrv, hosversionBefore(4, 0, 0) ? 37 : 38, *type,

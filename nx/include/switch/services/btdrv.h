@@ -230,7 +230,7 @@ Result btdrvEnableBluetooth(void);
 /// Disable bluetooth.
 Result btdrvDisableBluetooth(void);
 /// Clean up bluetooth core interface.  
-Result btdrvCleanupBluetooth(void);
+Result btdrvFinalizeBluetooth(void);
 /// Get properties of host bluetooth adapter.
 Result btdrvGetAdapterProperties(BluetoothAdapterProperty *property);
 /// Get bluetooth adapter property.
@@ -238,9 +238,9 @@ Result btdrvGetAdapterProperty(BluetoothPropertyType type, u8 *value, u16 size);
 /// Set bluetooth adapter property.
 Result btdrvSetAdapterProperty(BluetoothPropertyType type, const u8 *value, u16 size);
 /// Start device discovery.
-Result btdrvStartDiscovery(void);
+Result btdrvStartInquiry(void);
 /// Cancel device discovery.
-Result btdrvCancelDiscovery(void);
+Result btdrvStopInquiry(void);
 /// Pair bluetooth device with host.
 Result btdrvCreateBond(const BluetoothAddress *address, BluetoothTransport transport);
 /// Remove bonded device.
@@ -248,9 +248,9 @@ Result btdrvRemoveBond(const BluetoothAddress *address);
 /// Cancel bonding operation.
 Result btdrvCancelBond(const BluetoothAddress *address);
 /// Send response to bluetooth legacy pairing request.
-Result btdrvPinReply(const BluetoothAddress *address, bool accept, const BluetoothPinCode *pincode, u8 length);
+Result btdrvRespondToPinRequest(const BluetoothAddress *address, bool accept, const BluetoothPinCode *pincode, u8 length);
 /// Send response to bluetooth SSP pairing request.
-Result btdrvSspReply(const BluetoothAddress *address, BluetoothSspVariant variant, bool accept, u32 passkey);
+Result btdrvRespondToSspRequest(const BluetoothAddress *address, BluetoothSspVariant variant, bool accept, u32 passkey);
 /// Get bluetooth event type and data.
 Result btdrvGetEventInfo(BluetoothEventType *type, u8 *buffer, u16 length);
 
@@ -258,31 +258,31 @@ Result btdrvGetEventInfo(BluetoothEventType *type, u8 *buffer, u16 length);
 /// Initialize HID host interface.
 Result btdrvInitializeHid(Event *event, u16 version);
 /// Connect bluetooth device.
-Result btdrvHidConnect(const BluetoothAddress *address);
+Result btdrvOpenHidConnection(const BluetoothAddress *address);
 /// Disconnect bluetooth device.
-Result btdrvHidDisconnect(const BluetoothAddress *address);
+Result btdrvCloseHidConnection(const BluetoothAddress *address);
 /// Send raw data to device.
-Result btdrvHidSendData(const BluetoothAddress *address, const BluetoothHidData *data);
+Result btdrvWriteHidData(const BluetoothAddress *address, const BluetoothHidData *data);
 /// Send raw data to device.
-Result btdrvHidSendData2(const BluetoothAddress *address, const u8 *buffer, u16 length);
+Result btdrvWriteHidData2(const BluetoothAddress *address, const u8 *buffer, u16 length);
 /// Send set report to device.
-Result btdrvHidSetReport(const BluetoothAddress *address, HidReportType type, const BluetoothHidData *data);
+Result btdrvSetHidReport(const BluetoothAddress *address, HidReportType type, const BluetoothHidData *data);
 /// Send get report to device.
-Result btdrvHidGetReport(const BluetoothAddress *address, HidReportType type, u8 id);
+Result btdrvGetHidReport(const BluetoothAddress *address, HidReportType type, u8 id);
 /// Wake up bluetooth device.
-Result btdrvHidWakeController(const BluetoothAddress *address);
+Result btdrvTriggerConnection(const BluetoothAddress *address);
 /// Register paired device with bluetooth driver.
-Result btdrvHidAddPairedDevice(const BluetoothDevice *device);
+Result btdrvAddPairedDeviceInfo(const BluetoothDevice *device);
 /// Retrieve device registered with bluetooth driver.
-Result btdrvHidGetPairedDevice(const BluetoothAddress *address, BluetoothDevice *device);
+Result btdrvGetPairedDeviceInfo(const BluetoothAddress *address, BluetoothDevice *device);
 /// Clean up HID host interface.
-Result btdrvCleanupHid(void);
+Result btdrvFinalizeHid(void);
 /// Get HID event data.
-Result btdrvHidGetEventInfo(HidEventType *type, u8 *buffer, u16 length);
+Result btdrvGetHidEventInfo(HidEventType *type, u8 *buffer, u16 length);
 /// Register HID report event.
 Result btdrvRegisterHidReportEvent(Event *event);
 /// Get HID report event type and data.
-Result btdrvHidGetReportEventInfo(HidEventType *type, u8 *buffer, u16 length);
+Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length);
 
 
 // nn::bluetooth::CircularBuffer
