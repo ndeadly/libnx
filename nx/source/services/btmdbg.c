@@ -1,7 +1,7 @@
 #define NX_SERVICE_ASSUME_NON_DOMAIN
 #include "service_guard.h"
 #include "services/btmdbg.h"
-#include <string.h>
+#include "runtime/hosversion.h"
 
 static Service g_btmdbgSrv;
 
@@ -19,12 +19,21 @@ Service* btmdbgGetServiceSession(void) {
     return &g_btmdbgSrv;
 }
 
-Result btmdbgAcquireDiscoveryEvent(Event *event) {
+Result btmdbgAcquireDiscoveryEvent(Event *event, u8 *flags) {
     Handle handle = INVALID_HANDLE;
-    Result rc = serviceDispatch(&g_btmdbgSrv, 0,
-        .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
-        .out_handles = &handle,
-    );
+    Result rc;
+    if (hosversionBefore(3, 0, 0)) {
+        rc = serviceDispatch(&g_btmdbgSrv, 0,
+            .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
+            .out_handles = &handle,
+        );
+    }
+    else {
+        rc = serviceDispatchOut(&g_btmdbgSrv, 0, *flags,
+            .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
+            .out_handles = &handle,
+        );
+    }
 
     if (R_SUCCEEDED(rc))
         eventLoadRemote(event, handle, false);

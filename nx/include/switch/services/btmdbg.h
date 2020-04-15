@@ -17,7 +17,7 @@ void btmdbgExit(void);
 /// Gets the Service object for the actual btm:dbg service session.
 Service* btmdbgGetServiceSession(void);
 
-Result btmdbgAcquireDiscoveryEvent(Event *event);
+Result btmdbgAcquireDiscoveryEvent(Event *event, u8 *flags);
 Result btmdbgStartDiscovery(void);
 Result btmdbgCancelDiscovery(void);
 //Result btmdbgGetDeviceProperty();
