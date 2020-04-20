@@ -12,6 +12,13 @@
 
 typedef struct {
     BluetoothAddress        address;
+    BluetoothDeviceClass    cod;
+    BluetoothLocalName      name;
+    u8                      _unk;
+} BtmHostDeviceProperty;
+
+typedef struct {
+    BluetoothAddress        address;
     u16                     _pad0;
     u32                     _unk0;
     BluetoothLocalName      name;
@@ -55,7 +62,7 @@ void btmExit(void);
 Service* btmGetServiceSession(void);
 
 //Result btmGetState();
-//Result btmGetHostDeviceProperty();
+Result btmGetHostDeviceProperty(BtmHostDeviceProperty *property);
 Result btmAcquireDeviceConditionEvent(Event *event, u8 *flags);
 Result btmGetDeviceCondition(BtmDeviceCondition *condition);
 //Result btmSetBurstMode();
@@ -73,3 +80,5 @@ Result btmDisableRadio(void);
 Result btmHidDisconnect(const BluetoothAddress *address);
 //Result btmHidSetRetransmissionMode();
 Result btmAcquireAwakeReqEvent(Event *event, u8 *flags);
+
+Result btmProtectDeviceInfo(const BluetoothAddress *address, u8 unk);

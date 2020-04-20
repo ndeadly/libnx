@@ -19,8 +19,13 @@ Service* btmGetServiceSession(void) {
     return &g_btmSrv;
 }
 
-//Result btmGetState() {}
-//Result btmGetHostDeviceProperty() {}
+Result btmGetState(u32 *state) {
+    return serviceDispatchOut(&g_btmSrv, 0, *state);
+}
+
+Result btmGetHostDeviceProperty(BtmHostDeviceProperty *property) {
+    return serviceDispatchOut(&g_btmSrv, 1, *property);
+}
 
 Result btmAcquireDeviceConditionEvent(Event *event, u8 *flags) {
     Handle handle = INVALID_HANDLE;
@@ -149,4 +154,16 @@ Result btmAcquireAwakeReqEvent(Event *event, u8 *flags) {
         eventLoadRemote(event, handle, false);
 
     return rc;
+}
+
+Result btmProtectDeviceInfo(const BluetoothAddress *address, u8 unk) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        BluetoothAddress address;
+        u8               unk
+    } in = { *address, unk };
+
+    return serviceDispatchIn(&g_btmSrv, 22, in);
 }
