@@ -41,7 +41,7 @@ Result btdrvInitializeBluetooth(Event *event) {
     );
 
     if (R_SUCCEEDED(rc))
-        eventLoadRemote(event, handle, false);
+        eventLoadRemote(event, handle, true);
 
     return rc;
 }
