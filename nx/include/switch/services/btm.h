@@ -61,7 +61,7 @@ void btmExit(void);
 /// Gets the Service object for the actual btm service session.
 Service* btmGetServiceSession(void);
 
-//Result btmGetState();
+Result btmGetState(u32 *state);
 Result btmGetHostDeviceProperty(BtmHostDeviceProperty *property);
 Result btmAcquireDeviceConditionEvent(Event *event, u8 *flags);
 Result btmGetDeviceCondition(BtmDeviceCondition *condition);
