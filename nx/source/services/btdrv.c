@@ -454,3 +454,160 @@ u64 FreeBuffer(BluetoothCircularBuffer *buffer) {
 	
     return -1;
 }
+
+
+Result btdrvGetPendingConnections(void) {
+    if (hosversionBefore(3, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 40); 
+}
+
+
+
+Result btdrvEnableTxPowerBoostSetting(bool enable) {
+    if (hosversionBefore(3, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 42, enable);
+}
+
+Result btdrvIsTxPowerBoostSettingEnabled(bool *enabled) {
+    if (hosversionBefore(3, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchOut(&g_btdrvSrv, 43, *enabled);
+}
+
+Result btdrvEnableAfhSetting(bool enable) {
+    if (hosversionBefore(3, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 44, enable);
+}
+
+Result btdrvIsIsAfhSettingEnabled(bool *enabled) {
+    return serviceDispatchOut(&g_btdrvSrv, 45, *enabled);
+}
+
+
+
+Result btdrvInitializeBle(Event *event) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    Handle handle = INVALID_HANDLE;
+    Result rc = serviceDispatch(&g_btdrvSrv, 46,
+        .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
+        .out_handles = &handle,
+    );
+
+    if (R_SUCCEEDED(rc))
+        eventLoadRemote(event, handle, true);
+
+    return rc;
+}
+
+Result btdrvEnableBle(void) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 47);
+}
+
+Result btdrvDisableBle(void) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 48);
+}
+
+Result btdrvFinalizeBle(void) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 49);
+}
+
+
+
+Result btdrvStartBleScan(void) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 55);
+}
+
+Result btdrvStopBleScan(void) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 56);
+}
+
+
+
+Result btdrvClearBleScanFilters(void) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 60);
+}
+
+
+
+Result btdrvUnregisterAllGattClients(void) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 64);
+}
+
+
+
+Result btdrvGetBleManagedEventInfo(BleEventType *type, u8 *buffer, u16 length) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchOut(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 78 : 79, *type,
+        .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_Out },
+        .buffers = { {buffer, length} }
+    );
+}
+
+
+
+Result btdrvGetLeHidEventInfo(BleHidventType *type, u8 *buffer, u16 length) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchOut(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 95 : 96, *type,
+        .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_Out },
+        .buffers = { {buffer, length} }
+    );
+}
+
+Result btdrvRegisterBleHidEvent(Event *event) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    Handle handle = INVALID_HANDLE;
+    Result rc = serviceDispatch(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 96 : 97,
+        .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
+        .out_handles = &handle,
+    );
+
+    if (R_SUCCEEDED(rc))
+        eventLoadRemote(event, handle, true);
+
+    return rc;
+}
+
+
+
+Result btdrvIsManufacturingMode(bool *mfmode) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchOut(&g_btdrvSrv, 256, *mfmode);
+}

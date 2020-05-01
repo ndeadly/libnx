@@ -128,6 +128,14 @@ typedef enum {
     HidConnectionState_Unknown
 } HidConnectionState;
 
+typedef enum {
+    BleEventType_Unknown
+} BleEventType;
+
+typedef enum {
+    BleHidventType_Unknown
+} BleHidventType;
+
 typedef char BluetoothName[0xf9];
 typedef char BluetoothLocalName[0x20];
 typedef char BluetoothRemoteName[0x15];
@@ -284,6 +292,37 @@ Result btdrvRegisterHidReportEvent(Event *event);
 /// Get HID report event type and data.
 Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length);
 
+
+//(3.0.0+)
+Result btdrvGetPendingConnections(void);
+
+Result btdrvEnableTxPowerBoostSetting(bool enable);
+Result btdrvIsTxPowerBoostSettingEnabled(bool *enabled);
+Result btdrvEnableAfhSetting(bool enable);
+Result btdrvIsIsAfhSettingEnabled(bool *enabled);
+
+
+// Bluetooth BLE interface (5.0.0+)
+Result btdrvInitializeBle(Event *event);
+Result btdrvEnableBle(void);
+Result btdrvDisableBle(void);
+Result btdrvFinalizeBle(void);
+
+Result btdrvStartBleScan(void);
+Result btdrvStopBleScan(void);
+
+Result btdrvClearBleScanFilters(void);
+
+Result btdrvUnregisterAllGattClients(void);
+
+Result btdrvGetBleManagedEventInfo(BleEventType *type, u8 *buffer, u16 length);
+
+Result btdrvGetLeHidEventInfo(BleHidventType *type, u8 *buffer, u16 length);
+Result btdrvRegisterBleHidEvent(Event *event);
+
+
+// Other
+Result btdrvIsManufacturingMode(bool *mfmode);
 
 // nn::bluetooth::CircularBuffer
 typedef struct {
