@@ -162,7 +162,7 @@ Result btmProtectDeviceInfo(const BluetoothAddress *address, u8 unk) {
 
     const struct {
         BluetoothAddress address;
-        u8               unk
+        u8               unk;
     } in = { *address, unk };
 
     return serviceDispatchIn(&g_btmSrv, 22, in);
