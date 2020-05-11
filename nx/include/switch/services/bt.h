@@ -8,7 +8,7 @@
 #pragma once
 #include "../types.h"
 #include "../kernel/event.h"
-#include "services/btdrv.h"
+#include "../services/btdrv.h"
 
 /// Initialize bt.
 Result btInitialize(void);
