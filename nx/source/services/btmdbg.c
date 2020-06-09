@@ -68,6 +68,7 @@ Result btmdbgCancelBond(const BluetoothAddress *address) {
 }
 
 //Result btmdbgSetTsiMode() {}
+
 //Result btmdbgGeneralTest() {}
 
 Result btmdbgHidConnect(const BluetoothAddress *address) {
@@ -76,4 +77,10 @@ Result btmdbgHidConnect(const BluetoothAddress *address) {
     } in = { *address };
 
     return serviceDispatchIn(&g_btmdbgSrv, 8, in);
+}
+
+Result btmdbgGeneralGet(u32 unk, u8 *buff) {
+
+    return serviceDispatchIn(&g_btmdbgSrv, 9, unk);
+
 }

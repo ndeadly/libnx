@@ -26,7 +26,7 @@ Result btmdbgCancelBond(const BluetoothAddress *address);
 //Result btmdbgSetTsiMode();
 //Result btmdbgGeneralTest();
 Result btmdbgHidConnect(const BluetoothAddress *address);
-//Result btmdbgGeneralGet();
+Result btmdbgGeneralGet(u32 unk, u8 *buff);
 //Result btmdbgGetGattClientDisconnectionReason();
 //Result btmdbgGetBleConnectionParameter();
 //Result btmdbgGetBleConnectionParameterRequest();
