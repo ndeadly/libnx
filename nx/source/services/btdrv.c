@@ -109,9 +109,10 @@ Result btdrvCreateBond(const BluetoothAddress *address, BluetoothTransport trans
     else {
         const struct {
             BluetoothAddress    address;
-            u16                  _pad;
+            //u16                  _pad;
             BluetoothTransport  transport;
-        } in = { *address, 0, transport };
+        //} in = { *address, 0, transport };
+        } in = { *address, transport };
         
         return serviceDispatchIn(&g_btdrvSrv, 10, in);
     }
@@ -213,10 +214,10 @@ Result btdrvWriteHidData2(const BluetoothAddress *address, const u8 *buffer, u16
     );
 }
 
-Result btdrvSetHidReport(const BluetoothAddress *address, HidReportType type, const BluetoothHidData *data) {
+Result btdrvSetHidReport(const BluetoothAddress *address, BluetoothHhReportType type, const BluetoothHidData *data) {
     const struct {
         BluetoothAddress address;
-        HidReportType type;
+        BluetoothHhReportType type;
     } in = { *address, type};
 
     return serviceDispatchIn(&g_btdrvSrv, 21, in,
@@ -225,10 +226,10 @@ Result btdrvSetHidReport(const BluetoothAddress *address, HidReportType type, co
     );
 }
 
-Result btdrvGetHidReport(const BluetoothAddress *address, HidReportType type, u8 id) {
+Result btdrvGetHidReport(const BluetoothAddress *address, BluetoothHhReportType type, u8 id) {
     const struct {
         BluetoothAddress address;
-        HidReportType type;
+        BluetoothHhReportType type;
         u8 id;
     } in = { *address, type, id };
 
@@ -254,21 +255,21 @@ Result btdrvTriggerConnection(const BluetoothAddress *address, u16 unknown) {
 
 }
 
-Result btdrvAddPairedDeviceInfo(const BluetoothDevice *device) {
+Result btdrvAddPairedDeviceInfo(const BluetoothDevicesSettings *device) {
     return serviceDispatch(&g_btdrvSrv, 24,
         .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_In },
-        .buffers = { {device, sizeof(BluetoothDevice)} }
+        .buffers = { {device, sizeof(BluetoothDevicesSettings)} }
     );
 }
 
-Result btdrvGetPairedDeviceInfo(const BluetoothAddress *address, BluetoothDevice *device) {
+Result btdrvGetPairedDeviceInfo(const BluetoothAddress *address, BluetoothDevicesSettings *device) {
     const struct {
         BluetoothAddress address;
     } in = { *address };
 
     return serviceDispatchIn(&g_btdrvSrv, 25, in,
         .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_Out },
-        .buffers = { {device, sizeof(BluetoothDevice)} }
+        .buffers = { {device, sizeof(BluetoothDevicesSettings)} }
     );
 }
 
@@ -281,6 +282,64 @@ Result btdrvGetHidEventInfo(HidEventType *type, u8 *buffer, u16 length) {
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_Out },
         .buffers = { {buffer, length} }
     );
+}
+
+Result btdrvSetTsi(const BluetoothAddress *address, u8 tsi) {
+    const struct {
+        BluetoothAddress address;
+        u8 tsi;
+    } in = { *address, tsi };
+
+    return serviceDispatchIn(&g_btdrvSrv, 28, in);
+}
+
+Result btdrvEnableBurstMode(const BluetoothAddress *address, bool burst) {
+    const struct {
+        BluetoothAddress address;
+        bool burst;
+    } in = { *address, burst };
+
+    return serviceDispatchIn(&g_btdrvSrv, 29, in);
+}
+
+Result btdrvSetZeroRetransmission(const BluetoothAddress *address, u8 *ids, u8 num) {
+    const struct {
+        BluetoothAddress address;
+    } in = { *address };
+
+    return serviceDispatchIn(&g_btdrvSrv, 30, in,
+        .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
+        .buffers = { {ids, num} }
+    );
+}
+
+Result btdrvEnableMcMode(bool enable) {
+    return serviceDispatchIn(&g_btdrvSrv, 31, enable);
+}
+
+Result btdrvEnableLlrScan(void) {
+    return serviceDispatch(&g_btdrvSrv, 32);
+}
+
+Result btdrvDisableLlrScan(void) {
+    return serviceDispatch(&g_btdrvSrv, 33);
+}
+
+Result btdrvEnableRadio(bool enable) {
+    return serviceDispatchIn(&g_btdrvSrv, 34, enable);
+}
+
+Result btdrvSetVisibility(bool discoverable, bool connectable) {
+    const struct {
+        bool discoverable;
+        bool connectable;
+    } in = { discoverable, connectable };
+
+    return serviceDispatchIn(&g_btdrvSrv, 35, in);
+}
+
+Result btdrvEnableTbfcScan(bool enable) {
+    return serviceDispatchIn(&g_btdrvSrv, 36, enable);
 }
 
 Result btdrvRegisterHidReportEvent(Event *event) {
@@ -390,107 +449,54 @@ Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length)
     }
 }
 
-u8 *ReadBuffer(BluetoothCircularBuffer *buffer) {
-    u32 currentReadOffset;
-    u32 newOffset;
-
-	if (buffer->isInitialized) {
-		do {
-            currentReadOffset = buffer->readOffset;
-			if (currentReadOffset == buffer->writeOffset) {
-                break;
-            }
-			
-			if (buffer->data[currentReadOffset] != -1) {
-				return buffer->data + currentReadOffset;
-            }
-			
-			if (!buffer->isInitialized) {
-                break;
-            }
-
-            currentReadOffset = buffer->readOffset;
-            if (currentReadOffset != buffer->writeOffset) {
-                newOffset = currentReadOffset + buffer->data[currentReadOffset + 16] + 24;
-                if (newOffset >= BLUETOOTH_CIRCBUFFER_SIZE) {
-                    newOffset = 0;
-                }
-
-                if (newOffset >= BLUETOOTH_CIRCBUFFER_SIZE) {
-                    // Maybe fatalThrow here?
-                    break;
-                }
-                
-                buffer->readOffset = newOffset;
-            }
-		
-		} while(buffer->isInitialized);
-	}
-	
-	return 0;
+Result btdrvGetLatestPlr(PlrList *plr) {
+    return serviceDispatch(&g_btdrvSrv, hosversionBefore(4, 0, 0) ? 38 : 39,
+        .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcMapAlias | SfBufferAttr_Out },
+        .buffers = { {plr, sizeof(PlrList) } }
+    );
 }
-
-u64 FreeBuffer(BluetoothCircularBuffer *buffer) {
-    u32 currentReadOffset;
-	u32 newOffset;
-
-	if (buffer->isInitialized) {
-        currentReadOffset = buffer->readOffset;
-        if (currentReadOffset != buffer->writeOffset) {
-            newOffset = currentReadOffset + buffer->data[currentReadOffset + 16] + 24;
-            if (newOffset >= BLUETOOTH_CIRCBUFFER_SIZE) {
-                newOffset = 0;
-            }
-            
-            if (newOffset < BLUETOOTH_CIRCBUFFER_SIZE) {
-                buffer->readOffset = newOffset;
-                return 0;
-            }
-
-            // Maybe fatalThrow here?
-            //fatalThrow();
-        }
-    }
-	
-    return -1;
-}
-
 
 Result btdrvGetPendingConnections(void) {
     if (hosversionBefore(3, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return serviceDispatch(&g_btdrvSrv, 40); 
+    return serviceDispatch(&g_btdrvSrv, hosversionBefore(4, 0, 0) ? 39 : 40); 
 }
 
+Result btdrvGetChannelMap(ChannelMapList *map) {
+    if (hosversionBefore(3, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
+    return serviceDispatch(&g_btdrvSrv, hosversionBefore(4, 0, 0) ? 40 : 41,
+        .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcMapAlias | SfBufferAttr_Out },
+        .buffers = { {map, sizeof(ChannelMapList) } }
+    );
+}
 
 Result btdrvEnableTxPowerBoostSetting(bool enable) {
     if (hosversionBefore(3, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return serviceDispatchIn(&g_btdrvSrv, 42, enable);
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(4, 0, 0) ? 41 : 42, enable);
 }
 
 Result btdrvIsTxPowerBoostSettingEnabled(bool *enabled) {
     if (hosversionBefore(3, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return serviceDispatchOut(&g_btdrvSrv, 43, *enabled);
+    return serviceDispatchOut(&g_btdrvSrv, hosversionBefore(4, 0, 0) ? 42 : 43, *enabled);
 }
 
 Result btdrvEnableAfhSetting(bool enable) {
     if (hosversionBefore(3, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return serviceDispatchIn(&g_btdrvSrv, 44, enable);
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(4, 0, 0) ? 43 : 44, enable);
 }
 
 Result btdrvIsIsAfhSettingEnabled(bool *enabled) {
-    return serviceDispatchOut(&g_btdrvSrv, 45, *enabled);
+    return serviceDispatchOut(&g_btdrvSrv, hosversionBefore(4, 0, 0) ? 44 : 45, *enabled);
 }
-
-
 
 Result btdrvInitializeBle(Event *event) {
     if (hosversionBefore(5, 0, 0))
@@ -529,7 +535,57 @@ Result btdrvFinalizeBle(void) {
     return serviceDispatch(&g_btdrvSrv, 49);
 }
 
+Result btdrvSetBleVisibility(bool discoverable, bool connectable) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
+    return serviceDispatchIn(&g_btdrvSrv, 50, discoverable, connectable);
+}
+
+Result btdrvSetBleConnectionParameter(const BleConnectionParameter *param) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        BleConnectionParameter param;
+    } in = { *param };
+    
+    return serviceDispatchIn(&g_btdrvSrv, 51, in);
+}
+
+Result btdrvSetBleDefaultConnectionParameter(const BleConnectionParameter *param) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        BleConnectionParameter param;
+    } in = { *param };
+    
+    return serviceDispatchIn(&g_btdrvSrv, 52, in);
+}
+
+Result btdrvSetBleAdvertiseData(const BleAdvertisePacketData *advertise) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 53,
+        .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_In },
+        .buffers = { {advertise, sizeof(BleAdvertisePacketData)} },
+    );
+}
+
+Result btdrvSetLeAdvertiseParameter(const BluetoothAddress *address, u16 min, u16 max) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        BluetoothAddress address;
+        u16 min;
+        u16 max;
+    } in = { *address, min, max };
+
+    return serviceDispatchIn(&g_btdrvSrv, 54, in);
+}
 
 Result btdrvStartBleScan(void) {
     if (hosversionBefore(5, 0, 0))
@@ -545,7 +601,32 @@ Result btdrvStopBleScan(void) {
     return serviceDispatch(&g_btdrvSrv, 56);
 }
 
+Result btdrvAddBleScanFilterCondition(const BleAdvertiseFilter *filter) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
+    return serviceDispatch(&g_btdrvSrv, 57,
+        .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_In },
+        .buffers = { {filter, sizeof(BleAdvertiseFilter)} },
+    );
+}
+
+Result btdrvDeleteBleScanFilterCondition(const BleAdvertiseFilter *filter) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 58,
+        .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_In },
+        .buffers = { {filter, sizeof(BleAdvertiseFilter)} },
+    );
+}
+
+Result btdrvDeleteBleScanFilter(u8 index) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 59, index);
+}
 
 Result btdrvClearBleScanFilters(void) {
     if (hosversionBefore(5, 0, 0))
@@ -554,7 +635,30 @@ Result btdrvClearBleScanFilters(void) {
     return serviceDispatch(&g_btdrvSrv, 60);
 }
 
+Result btdrvEnableBleScanFilter(bool enable) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
+    return serviceDispatchIn(&g_btdrvSrv, 61, enable);
+}
+
+Result btdrvRegisterGattClient(const GattAttributeUuid *uuid) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        GattAttributeUuid uuid;
+    } in = { *uuid };
+
+    return serviceDispatchIn(&g_btdrvSrv, 62, in);
+}
+
+Result btdrvUnregisterGattClient(u8 index) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 63, index);
+}
 
 Result btdrvUnregisterAllGattClients(void) {
     if (hosversionBefore(5, 0, 0))
@@ -563,7 +667,179 @@ Result btdrvUnregisterAllGattClients(void) {
     return serviceDispatch(&g_btdrvSrv, 64);
 }
 
+Result btdrvConnectGattServer(u64 id, u8 iface, const BluetoothAddress *address, bool direct) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);    
 
+    const struct {
+        u64 id;
+        u8 iface;
+        BluetoothAddress address;
+        bool direct;
+    } in = { id, iface, *address, direct };
+
+    return serviceDispatchIn(&g_btdrvSrv, 65, in);
+}
+
+/* These need attention to ensure correct data is sent on older fw versions */
+// 
+Result btdrvCancelConnectGattServer(u8 iface, const BluetoothAddress *address, bool unk) {
+    if (hosversionBefore(5, 1, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u8 iface;
+        BluetoothAddress address;
+        bool unk;
+    } in = { iface, *address, unk };
+
+    return serviceDispatchIn(&g_btdrvSrv, 66, in);
+}
+//
+Result btdrvDisconnectGattServer(u32 unk) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32 unk;
+    } in = { unk };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 66 : 67, in);  
+}
+//
+Result btdrvGetGattAttribute(u32 unk, const BluetoothAddress *address) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    if (hosversionAtLeast(9, 0, 0))
+        return serviceDispatchIn(&g_btdrvSrv, 68, unk); 
+
+    const struct {
+        u32 unk;
+        BluetoothAddress address;
+    } in = { unk, *address };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 67 : 68, in);
+}
+
+Result btdrvGetGattService(u32 connId, const GattAttributeUuid *filter) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32 connId;
+        GattAttributeUuid filter;
+    } in = { connId, *filter };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 68 : 69, in);
+}
+
+Result btdrvConfigureGattMtu(u32 connId, u16 mtu) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32 connId;
+        u16 mtu;
+    } in = { connId, mtu };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 69 : 70, in);
+}
+
+/* Need to check these four on older fw as well */
+//
+Result btdrvRegisterGattServer(const GattAttributeUuid *uuid) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        GattAttributeUuid uuid;
+    } in = { *uuid };
+
+    return serviceDispatchIn(&g_btdrvSrv, 71, in);
+}
+//
+Result btdrvUnregisterGattServer(u8 iface) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 72, iface);
+}
+//
+Result btdrvConnectGattClient(u8 unk1, const BluetoothAddress *address, bool unk2) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u8 unk1;
+        BluetoothAddress address;
+        bool unk2;
+    } in = { unk1, *address, unk2 };
+
+    return serviceDispatchIn(&g_btdrvSrv, 73, in);
+}
+//
+Result btdrvDisconnectGattClient(u8 unk) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 74, unk);
+}
+
+Result btdrvAddGattService(u8 iface, const GattAttributeUuid *uuid, u8 handle, bool primary) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u8 iface;
+        GattAttributeUuid uuid;
+        u8 handle;
+        bool primary;
+    } in = { iface, *uuid, handle, primary };
+
+    return serviceDispatchIn(&g_btdrvSrv, 75, in);
+}
+
+Result btdrvEnableGattService(u8 iface, const GattAttributeUuid *uuid) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u8 iface;
+        GattAttributeUuid uuid;
+    } in = { iface, *uuid };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 74 : 76, in);
+}
+
+Result btdrvAddGattCharacteristic(u8 iface, const GattAttributeUuid *svcUuid, const GattAttributeUuid *charUuid, u16 permissions, u8 properties) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u8 iface;
+        GattAttributeUuid svcUuid;
+        GattAttributeUuid charUuid;
+        u16 permissions;
+        u8 properties;
+    } in = { iface, *svcUuid, *charUuid, permissions, properties };
+
+    return serviceDispatchIn(&g_btdrvSrv, 77, in);
+}
+
+Result btdrvAddGattDescriptor(u8 iface, const GattAttributeUuid *svcUuid, const GattAttributeUuid *charUuid, u16 permissions) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u8 iface;
+        GattAttributeUuid svcUuid;
+        GattAttributeUuid charUuid;
+        u16 permissions;
+    } in = { iface, *svcUuid, *charUuid, permissions };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 76 : 78, in);
+}
 
 Result btdrvGetBleManagedEventInfo(BleEventType *type, u8 *buffer, u16 length) {
     if (hosversionBefore(5, 0, 0))
@@ -575,7 +851,206 @@ Result btdrvGetBleManagedEventInfo(BleEventType *type, u8 *buffer, u16 length) {
     );
 }
 
+Result btdrvGetGattFirstCharacteristic(GattId *charOut, u8 *property, u32 connId, const GattId *svcId, bool primary, const GattAttributeUuid *charFilter) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
+    const struct {
+        u8      property;
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattAttributeUuid charFilter;
+    } in = { *property, connId, *svcId, primary, *charFilter };
+
+    return serviceDispatchInOut(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 79 : 80, in, *charOut);
+}
+
+Result btdrvGetGattNextCharacteristic(GattId *charOut, u8 *property, u32 connId, const GattId *svcId, bool primary, const GattId *charIn, const GattAttributeUuid *charFilter) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u8      property;
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattId  charIn;
+        GattAttributeUuid charFilter;
+    } in = { *property, connId, *svcId, primary, *charIn, *charFilter };
+
+    return serviceDispatchInOut(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 80 : 81, in, *charOut);
+}
+
+Result btdrvGetGattFirstDescriptor(GattId *descrOut, u32 connId, const GattId *svcId, bool primary, const GattId *charIn, const GattAttributeUuid *descrFilter) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattId  charIn;
+        GattAttributeUuid descrFilter;
+    } in = { connId, *svcId, primary, *charIn, *descrFilter };
+
+    return serviceDispatchInOut(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 81 : 82, in, *descrOut);
+}
+
+Result btdrvGetGattNextDescriptor(GattId *descrOut, u32 connId, const GattId *svcId, bool primary, const GattId *charIn, const GattId *descrIn, const GattAttributeUuid *descrFilter) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattId  charIn;
+        GattId  descrIn;
+        GattAttributeUuid descrFilter;
+    } in = { connId, *svcId, primary, *charIn, *descrIn, *descrFilter };
+
+    return serviceDispatchInOut(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 82 : 83, in, *descrOut);
+}
+
+Result btdrvRegisterGattManagedDataPath(const GattAttributeUuid *uuid) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 84, uuid);
+}
+
+Result btdrvUnregisterGattManagedDataPath(const GattAttributeUuid *uuid) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 85, uuid);
+}
+
+Result btdrvRegisterGattHidDataPath(const GattAttributeUuid *uuid) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 86, uuid);
+}
+
+Result btdrvUnregisterGattHidDataPath(const GattAttributeUuid *uuid) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 87, uuid);
+}
+
+Result btdrvRegisterGattDataPath(const GattAttributeUuid *uuid) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 88, uuid);
+}
+
+Result btdrvUnregisterGattDataPath(const GattAttributeUuid *uuid) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 83 : 89, uuid);
+}
+
+Result btdrvReadGattCharacteristic(u32 connId, const GattId *svcId, bool primary, const GattId *charId, u8 auth) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattId  charId;
+        u8      auth;
+    } in = { connId, *svcId, primary, *charId, auth };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 89 : 90, in);
+}
+
+Result btdrvReadGattDescriptor(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const GattId *descrId, u8 auth) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattId  charId;
+        GattId  descrId;
+        u8      auth;
+    } in = { connId, *svcId, primary, *charId, *descrId, auth };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 90 : 91, in);
+}
+
+Result btdrvWriteGattCharacteristic(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const u8 *data, u16 length, u8 auth, bool response) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattId  charId; 
+        u8      auth;
+        bool    response;
+    } in = { connId, *svcId, primary, *charId, auth, response };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 91 : 92, in,
+        .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
+        .buffers = { {data, length} }
+    );
+}
+
+Result btdrvWriteGattDescriptor(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const GattId *descrId, const u8 *data, u16 length, u8 auth) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattId  charId;
+        GattId  descrId;
+        u8      auth;
+    } in = { connId, *svcId, primary, *charId, *descrId, auth };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 92 : 93, in,
+        .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
+        .buffers = { {data, length} }
+    );
+}
+
+Result btdrvRegisterGattNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattId  charId;
+    } in = { connId, *svcId, primary, *charId };
+
+    return serviceDispatchIn(&g_btdrvSrv, 94, in);
+}
+
+Result btdrvUnregisterGattNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId) {
+    if (hosversionBefore(5, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    const struct {
+        u32     connId;
+        GattId  svcId;
+        bool    primary;
+        GattId  charId;
+    } in = { connId, *svcId, primary, *charId };
+
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 93 : 95, in);
+}
 
 Result btdrvGetLeHidEventInfo(BleHidventType *type, u8 *buffer, u16 length) {
     if (hosversionBefore(5, 0, 0))
@@ -603,11 +1078,211 @@ Result btdrvRegisterBleHidEvent(Event *event) {
     return rc;
 }
 
+Result btdrvSetBleScanParameter(u16 interval, u16 window) {
+    if (hosversionBefore(5, 1, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
+    const struct {
+        u16 interval;
+        u16 window;
+    } in = { interval, window };
+
+    return serviceDispatchIn(&g_btdrvSrv, 98, in);
+}
+
+/*
+Result btdrvMoveToSecondaryPiconet() {
+    if (hosversionBefore(10, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 99, );
+}
+*/
 
 Result btdrvIsManufacturingMode(bool *mfmode) {
     if (hosversionBefore(5, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
     return serviceDispatchOut(&g_btdrvSrv, 256, *mfmode);
+}
+
+/*
+Result btdrvEmulateBluetoothCrash() {
+    if (hosversionBefore(7, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatchIn(&g_btdrvSrv, 257, );
+}
+*/
+
+/*
+Result btdrvGetBleChannelMap() {
+    if (hosversionBefore(9, 0, 0))
+        return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
+
+    return serviceDispatch(&g_btdrvSrv, 258, 
+        .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcMapAlias | SfBufferAttr_Out },
+        .buffers = { { } }
+    );
+}
+*/
+
+/*
+void CreateBuffer(BluetoothCircularBuffer *buffer) {
+    buffer->readOffset = 0;
+    buffer->writeOffset = 0;
+    buffer->isInitialized = false;
+}
+
+u64 InitializeBuffer(BluetoothCircularBuffer *buffer, const char *name) {
+
+    if (!name || buffer->isInitialized) {
+        fatalThrow(-1);
+    }
+
+    buffer->readOffset = 0;
+    buffer->writeOffset = 0;
+    strncpy(buffer->name, name, 0x10);
+    buffer->_unk1 = 0;
+    buffer->size = BLUETOOTH_CIRCBUFFER_SIZE;
+    buffer->_unk0 = 0;
+    buffer->isInitialized = true;
+}
+
+bool IsInitialized(BluetoothCircularBuffer *buffer) {
+    return buffer->isInitialized;
+}
+
+u64 GetWriteableSize(BluetoothCircularBuffer *buffer) {
+    u32 readOffset = buffer->readOffset;
+    u32 writeOffset = buffer->writeOffset;
+    u64 size;
+
+    if (!buffer->isInitialized)
+        return 0;
+
+    if (readOffset <= writeOffset)
+        size = (BLUETOOTH_CIRCBUFFER_SIZE - 1) - writeOffset + readOffset;
+    else
+        size = readOffset + ~writeOffset; //
+
+    if (size > BLUETOOTH_CIRCBUFFER_SIZE) 
+        size = 0;
+
+    return size;
+}
+
+void AttachEvent(BluetoothCircularBuffer *buffer, Event *event) {
+    buffer->event = event;
+}
+
+u64 _write(BluetoothCircularBuffer *buffer, u8 type, void *data, size_t size) {
+
+    HidReportDataPacket *packet = (HidReportDataPacket *)buffer->data[buffer->writeOffset];
+    packet->header.type = type;
+    packet->header.timestamp = armGetSystemTick();
+    packet->header.size = size;
+
+    if (type != -1) {
+        if (data && (size > 0))
+            memcpy(&packet->data, data, size);
+        else 
+            return -1;
+    }
+
+    u32 newOffset = buffer->writeOffset + size + sizeof(packet->header);
+    if (newOffset >= BLUETOOTH_CIRCBUFFER_SIZE)
+        return -1;
+
+    if (newOffset == BLUETOOTH_CIRCBUFFER_SIZE)
+        buffer->writeOffset = 0; 
+    else
+        buffer->writeOffset = newOffset;
+
+    return 0;
+}
+
+u64 WriteBuffer(BluetoothCircularBuffer *buffer, u8 type, void *data, size_t size) {
+    if (IsInitialized(buffer)) {
+        os::SdkMutexType::Lock(&buffer->mutex);
+
+        u32 writeableSize = GetWriteableSize(buffer)
+        if (writeableSize < size + 24) {
+            if (buffer->event)
+                os::SignalEvent(&buffer->event);
+
+            os::SdkMutexType::Unlock(&buffer->mutex);
+            return -1;
+        }
+        else {
+
+        }
+    }
+}
+
+*/
+
+u8 *ReadBuffer(BluetoothCircularBuffer *buffer) {
+    u32 currentReadOffset;
+    u32 newOffset;
+
+	if (buffer->isInitialized) {
+		do {
+            currentReadOffset = buffer->readOffset;
+			if (currentReadOffset == buffer->writeOffset) {
+                break;
+            }
+			
+			if (buffer->data[currentReadOffset] != -1) {
+				return buffer->data + currentReadOffset;
+            }
+			
+			if (!buffer->isInitialized) {
+                break;
+            }
+
+            currentReadOffset = buffer->readOffset;
+            if (currentReadOffset != buffer->writeOffset) {
+                newOffset = currentReadOffset + buffer->data[currentReadOffset + 16] + sizeof(BufferPacketHeader);
+                if (newOffset >= BLUETOOTH_CIRCBUFFER_SIZE) {
+                    newOffset = 0;
+                }
+
+                if (newOffset >= BLUETOOTH_CIRCBUFFER_SIZE) {
+                    // Maybe fatalThrow here?
+                    break;
+                }
+                
+                buffer->readOffset = newOffset;
+            }
+		
+		} while(buffer->isInitialized);
+	}
+	
+	return 0;
+}
+
+u64 FreeBuffer(BluetoothCircularBuffer *buffer) {
+    u32 currentReadOffset;
+	u32 newOffset;
+
+	if (buffer->isInitialized) {
+        currentReadOffset = buffer->readOffset;
+        if (currentReadOffset != buffer->writeOffset) {
+            newOffset = currentReadOffset + buffer->data[currentReadOffset + 16] + sizeof(BufferPacketHeader);
+            if (newOffset >= BLUETOOTH_CIRCBUFFER_SIZE) {
+                newOffset = 0;
+            }
+            
+            if (newOffset < BLUETOOTH_CIRCBUFFER_SIZE) {
+                buffer->readOffset = newOffset;
+                return 0;
+            }
+
+            // Maybe fatalThrow here?
+            //fatalThrow();
+        }
+    }
+	
+    return -1;
 }

@@ -13,11 +13,19 @@
 #define BLUETOOTH_CIRCBUFFER_SIZE 10000
 
 typedef enum  {
-    BluetoothEvent_DeviceFound              = 0x3,
+    BluetoothEvent_AdapterStateChanged,
+    BluetoothEvent_AdapterProperties,
+    BluetoothEvent_RemoteDeviceProperties,
+    BluetoothEvent_DeviceFound,
     BluetoothEvent_DiscoveryStateChanged,
     BluetoothEvent_PinRequest,
     BluetoothEvent_SspRequest,
-    BluetoothEvent_BondStateChanged
+    BluetoothEvent_BondStateChanged,
+    BluetoothEvent_AclStateChanged,
+    BluetoothEvent_ThreadEvent,
+    BluetoothEvent_DutModeReceive,
+    BluetoothEvent_LeTestMode,
+    BluetoothEvent_EnergyInfo
 } BluetoothEventType;
 
 typedef enum  {
@@ -85,18 +93,35 @@ typedef enum  {
     HidEvent_ProtocolMode,
     HidEvent_IdleTime,
     HidEvent_GetReport,
-    HidEvent_Unknown05,
-    HidEvent_Unknown06,
+    HidEvent_VirtualUnplug,
+    HidEvent_Handshake,
     HidEvent_Unknown07,
     HidEvent_Unknown08,
     HidEvent_Unknown09,
 } HidEventType;
 
+/*
+typedef enum  {
+    HidHostEvent_Open,
+    HidHostEvent_Close,
+    HidHostEvent_MipStart,
+    HidHostEvent_MipStop,
+    HidHostEvent_GetReport,
+    HidHostEvent_SetReport,
+    HidHostEvent_GetProtocol,
+    HidHostEvent_SetProtocol,
+    HidHostEvent_GetIdle,
+    HidHostEvent_SetIdle,
+    HidHostEvent_GetDscpInfo,
+    HidHostEvent_VcUnplug
+} HidEventType;
+*/
+
 typedef enum {
     HidReportType_InputReport  = 0x1,
     HidReportType_OutputReport,
     HidReportType_FeatureReport
-} HidReportType;
+} BluetoothHhReportType;
 
 typedef enum {
     HidStatus_Ok                            = 0,
@@ -171,7 +196,7 @@ typedef struct {
 
     // Pad out to 0x200. Think this is what HOS uses
     u8                    _pad[0xd0];
-} BluetoothDevice;
+} BluetoothDevicesSettings;
 
 typedef struct {
     u16 length;
@@ -204,6 +229,50 @@ typedef union {
 } HidReportData;
 
 typedef union {
+    struct __attribute__ ((__packed__)) {
+        BluetoothName           name;
+        BluetoothAddress        address;
+        u8                      uuid[0x10];
+        BluetoothDeviceClass    cod;
+        /* + more items we don't care about */
+        u8  _unk0;
+        u8  _unk1[0x252];
+        u32 _unk2;
+    } deviceFound;
+    
+    struct {
+        BluetoothDiscoveryState state;
+    } discoveryState;
+    
+    struct {
+        BluetoothAddress        address;
+        BluetoothName           name;
+        BluetoothDeviceClass    cod;
+    } pinReply;
+    
+    struct {
+        BluetoothAddress        address;
+        BluetoothName           name;
+        BluetoothDeviceClass    cod;
+        BluetoothSspVariant     variant;
+        u32                     passkey;
+    } sspReply;
+    
+    union {
+        struct {
+            BluetoothAddress        address;
+            BluetoothStatus         status;
+            BluetoothBondState      state;
+        };
+        struct {
+            BluetoothStatus         status;
+            BluetoothAddress        address;
+            BluetoothBondState      state;
+        } v2;
+    } bondState;
+} BluetoothEventData;
+
+typedef union {
     struct {
         BluetoothAddress    address;
         HidConnectionState  state;
@@ -212,10 +281,38 @@ typedef union {
     struct {
         BluetoothAddress    address;
         HidStatus           status;
-        uint32_t 	        report_length;
+        u32 	            report_length;
         HidReportData		report_data;
     } getReport;
 } HidEventData;
+
+typedef struct {
+    u8 unk[0xa4];
+} PlrList;
+
+typedef struct {
+    u8 unk[0x88];
+} ChannelMapList;
+
+typedef struct {
+    u8 unk[0x14];
+} BleConnectionParameter;
+
+typedef struct {
+    u8 unk[0xcc];
+} BleAdvertisePacketData;
+
+typedef struct {
+    u8 unk[0x3e];
+} BleAdvertiseFilter;
+
+typedef struct {
+    u8 unk[0x14];
+} GattAttributeUuid; 
+
+typedef struct {
+    u8 unk[0x18];
+} GattId;
 
 
 /// Initialize btdrv.
@@ -274,28 +371,39 @@ Result btdrvWriteHidData(const BluetoothAddress *address, const BluetoothHidData
 /// Send raw data to device.
 Result btdrvWriteHidData2(const BluetoothAddress *address, const u8 *buffer, u16 length);
 /// Send set report to device.
-Result btdrvSetHidReport(const BluetoothAddress *address, HidReportType type, const BluetoothHidData *data);
+Result btdrvSetHidReport(const BluetoothAddress *address, BluetoothHhReportType type, const BluetoothHidData *data);
 /// Send get report to device.
-Result btdrvGetHidReport(const BluetoothAddress *address, HidReportType type, u8 id);
+Result btdrvGetHidReport(const BluetoothAddress *address, BluetoothHhReportType type, u8 id);
 /// Wake up bluetooth device.
 Result btdrvTriggerConnection(const BluetoothAddress *address, u16 unknown);
 /// Register paired device with bluetooth driver.
-Result btdrvAddPairedDeviceInfo(const BluetoothDevice *device);
+Result btdrvAddPairedDeviceInfo(const BluetoothDevicesSettings *device);
 /// Retrieve device registered with bluetooth driver.
-Result btdrvGetPairedDeviceInfo(const BluetoothAddress *address, BluetoothDevice *device);
+Result btdrvGetPairedDeviceInfo(const BluetoothAddress *address, BluetoothDevicesSettings *device);
 /// Clean up HID host interface.
 Result btdrvFinalizeHid(void);
 /// Get HID event data.
 Result btdrvGetHidEventInfo(HidEventType *type, u8 *buffer, u16 length);
+
+Result btdrvSetTsi(const BluetoothAddress *address, u8 tsi);
+Result btdrvEnableBurstMode(const BluetoothAddress *address, bool burst);
+Result btdrvSetZeroRetransmission(const BluetoothAddress *address, u8 *ids, u8 num);
+Result btdrvEnableMcMode(bool enable);
+Result btdrvEnableLlrScan(void);
+Result btdrvDisableLlrScan(void);
+Result btdrvEnableRadio(bool enable);
+Result btdrvSetVisibility(bool discoverable, bool connectable);
+Result btdrvEnableTbfcScan(bool enable);
+
 /// Register HID report event.
 Result btdrvRegisterHidReportEvent(Event *event);
 /// Get HID report event type and data.
 Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length);
 
-
+Result btdrvGetLatestPlr(PlrList *plr);
 //(3.0.0+)
 Result btdrvGetPendingConnections(void);
-
+Result btdrvGetChannelMap(ChannelMapList *map);
 Result btdrvEnableTxPowerBoostSetting(bool enable);
 Result btdrvIsTxPowerBoostSettingEnabled(bool *enabled);
 Result btdrvEnableAfhSetting(bool enable);
@@ -307,26 +415,67 @@ Result btdrvInitializeBle(Event *event);
 Result btdrvEnableBle(void);
 Result btdrvDisableBle(void);
 Result btdrvFinalizeBle(void);
-
+Result btdrvSetBleVisibility(bool discoverable, bool connectable);
+Result btdrvSetBleConnectionParameter(const BleConnectionParameter *param);
+Result btdrvSetBleDefaultConnectionParameter(const BleConnectionParameter *param);
+Result btdrvSetBleAdvertiseData(const BleAdvertisePacketData *advertise);
+Result btdrvSetLeAdvertiseParameter(const BluetoothAddress *address, u16 min, u16 max);
 Result btdrvStartBleScan(void);
 Result btdrvStopBleScan(void);
-
+Result btdrvAddBleScanFilterCondition(const BleAdvertiseFilter *filter);
+Result btdrvDeleteBleScanFilterCondition(const BleAdvertiseFilter *filter);
+Result btdrvDeleteBleScanFilter(u8 index);
 Result btdrvClearBleScanFilters(void);
-
+Result btdrvEnableBleScanFilter(bool enable);
+Result btdrvRegisterGattClient(const GattAttributeUuid *uuid);
+Result btdrvUnregisterGattClient(u8 index);
 Result btdrvUnregisterAllGattClients(void);
+Result btdrvConnectGattServer(u64 id, u8 iface, const BluetoothAddress *address, bool direct);
 
+Result btdrvCancelConnectGattServer(u8 iface, const BluetoothAddress *address, bool unk);
+Result btdrvDisconnectGattServer(u32 unk);
+Result btdrvGetGattAttribute(u32 unk, const BluetoothAddress *address);
+
+Result btdrvGetGattService(u32 connId, const GattAttributeUuid *filter);
+Result btdrvConfigureGattMtu(u32 connId, u16 mtu);
+Result btdrvRegisterGattServer(const GattAttributeUuid *uuid);
+Result btdrvUnregisterGattServer(u8 iface);
+Result btdrvConnectGattClient(u8 unk1, const BluetoothAddress *address, bool unk2);
+Result btdrvDisconnectGattClient(u8 unk);
+Result btdrvAddGattService(u8 iface, const GattAttributeUuid *uuid, u8 handle, bool primary);
+Result btdrvEnableGattService(u8 iface, const GattAttributeUuid *uuid);
+Result btdrvAddGattCharacteristic(u8 iface, const GattAttributeUuid *svcUuid, const GattAttributeUuid *charUuid, u16 permissions, u8 properties);
+Result btdrvAddGattDescriptor(u8 iface, const GattAttributeUuid *svcUuid, const GattAttributeUuid *charUuid, u16 permissions);
 Result btdrvGetBleManagedEventInfo(BleEventType *type, u8 *buffer, u16 length);
-
+Result btdrvGetGattFirstCharacteristic(GattId *charOut, u8 *property, u32 connId, const GattId *svcId, bool primary, const GattAttributeUuid *charFilter);
+Result btdrvGetGattNextCharacteristic(GattId *charOut, u8 *property, u32 connId, const GattId *svcId, bool primary, const GattId *charIn, const GattAttributeUuid *charFilter);
+Result btdrvGetGattFirstDescriptor(GattId *descrOut, u32 connId, const GattId *svcId, bool primary, const GattId *charIn, const GattAttributeUuid *descrFilter);
+Result btdrvGetGattNextDescriptor(GattId *descrOut, u32 connId, const GattId *svcId, bool primary, const GattId *charIn, const GattId *descrIn, const GattAttributeUuid *descrFilter);
+Result btdrvRegisterGattManagedDataPath(const GattAttributeUuid *uuid);
+Result btdrvUnregisterGattManagedDataPath(const GattAttributeUuid *uuid);
+Result btdrvRegisterGattHidDataPath(const GattAttributeUuid *uuid);
+Result btdrvUnregisterGattHidDataPath(const GattAttributeUuid *uuid);
+Result btdrvRegisterGattDataPath(const GattAttributeUuid *uuid);
+Result btdrvUnregisterGattDataPath(const GattAttributeUuid *uuid);
+Result btdrvReadGattCharacteristic(u32 connId, const GattId *svcId, bool primary, const GattId *charId, u8 auth);
+Result btdrvReadGattDescriptor(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const GattId *descrId, u8 auth);
+Result btdrvWriteGattCharacteristic(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const u8 *data, u16 length, u8 auth, bool response);
+Result btdrvWriteGattDescriptor(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const GattId *descrId, const u8 *data, u16 length, u8 auth);
+Result btdrvRegisterGattNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId);
+Result btdrvUnregisterGattNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId);
 Result btdrvGetLeHidEventInfo(BleHidventType *type, u8 *buffer, u16 length);
 Result btdrvRegisterBleHidEvent(Event *event);
-
+Result btdrvSetBleScanParameter(u16 interval, u16 window);
 
 // Other
+//Result btdrvMoveToSecondaryPiconet();
 Result btdrvIsManufacturingMode(bool *mfmode);
+//Result btdrvEmulateBluetoothCrash();
+//Result btdrvGetBleChannelMap();
 
 // nn::bluetooth::CircularBuffer
 typedef struct {
-    u64     _unk0;
+    u64     sdk_mutex;
     Event   *event;
     u8      data[BLUETOOTH_CIRCBUFFER_SIZE];
     u32     writeOffset;
@@ -340,12 +489,23 @@ typedef struct {
     u8      _unk3[4];
 } BluetoothCircularBuffer;
 
+typedef struct {
+    u8 type;            //+0x00
+    u64 timestamp;      //+0x08
+    u64 size;           //+0x10
+} BufferPacketHeader;
+
+typedef struct {
+    BufferPacketHeader header;
+    HidReportData data;
+} BufferPacket;
+
 // Format of packets written to nn::bluetooth::CircularBuffer
 typedef struct {
 	struct {
         u8 type;            //+0x00
         //u8 _pad0[3];
-        u32 _unk0;          //+0x04
+        //u32 _unk0;          //+0x04
         u64 timestamp;      //+0x08
         u64 size;           //+0x10
     } header;
@@ -353,6 +513,18 @@ typedef struct {
     HidReportData data;
 } HidReportDataPacket;
 
+// nn::bluetooth::CircularBuffer::CircularBuffer
+//void CreateBuffer(BluetoothCircularBuffer *buffer);
+// nn::bluetooth::CircularBuffer::Initialize
+//u64 InitializeBuffer(BluetoothCircularBuffer *buffer, const char*name); // pre 10.0.0 takes an event too
+// nn::bluetooth::CircularBuffer::IsInitialized
+//bool IsInitialized(BluetoothCircularBuffer *buffer);
+// nn::bluetooth::CircularBuffer::GetWriteableSize
+//u64 GetWriteableSize(BluetoothCircularBuffer *buffer);
+// nn::bluetooth::CircularBuffer::Write
+//u64 WriteBuffer(BluetoothCircularBuffer *buffer, void *data, size_t size);
+// nn::bluetoothCirculabuffer::AttachEvent  <-- madeup name
+//void AttachEvent(BluetoothCircularBuffer *buffer, Event *event);
 // nn::bluetooth::CircularBuffer::Read
 u8 *ReadBuffer(BluetoothCircularBuffer *buffer);
 // nn::bluetooth::CircularBuffer::Free
