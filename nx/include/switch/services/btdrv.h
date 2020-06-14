@@ -359,7 +359,7 @@ Result btdrvRespondToSspRequest(const BluetoothAddress *address, BluetoothSspVar
 /// Get bluetooth event type and data.
 Result btdrvGetEventInfo(BluetoothEventType *type, u8 *buffer, u16 length);
 
-// HID Host interface
+// Bluetooth HID Host interface
 /// Initialize HID host interface.
 Result btdrvInitializeHid(Event *event, u16 version);
 /// Connect bluetooth device.
@@ -411,60 +411,113 @@ Result btdrvIsIsAfhSettingEnabled(bool *enabled);
 
 
 // Bluetooth BLE interface (5.0.0+)
+/// Initialize bluetooth BLE interface.
 Result btdrvInitializeBle(Event *event);
+/// Enable bluetooth BLE interface.
 Result btdrvEnableBle(void);
+/// Disable bluetooth BLE interface.
 Result btdrvDisableBle(void);
+/// Clean up bluetooth BLE interface.
 Result btdrvFinalizeBle(void);
+/// Set BLE discoverability and connectability
 Result btdrvSetBleVisibility(bool discoverable, bool connectable);
+/// Set BLE connection parameter.
 Result btdrvSetBleConnectionParameter(const BleConnectionParameter *param);
+/// Set the default BLE connection parameter.
 Result btdrvSetBleDefaultConnectionParameter(const BleConnectionParameter *param);
+/// Set BLE advertise data.
 Result btdrvSetBleAdvertiseData(const BleAdvertisePacketData *advertise);
+/// Set BLE advertise parameter.
 Result btdrvSetLeAdvertiseParameter(const BluetoothAddress *address, u16 min, u16 max);
+/// Start BLE scan.
 Result btdrvStartBleScan(void);
+/// Stop BLE scan.
 Result btdrvStopBleScan(void);
+/// Add BLE scan filter condition.
 Result btdrvAddBleScanFilterCondition(const BleAdvertiseFilter *filter);
+/// Delete BLE scan filter condition.
 Result btdrvDeleteBleScanFilterCondition(const BleAdvertiseFilter *filter);
+/// Delete BLE scan filter.
 Result btdrvDeleteBleScanFilter(u8 index);
+/// Clear all BLE scan filters.
 Result btdrvClearBleScanFilters(void);
+/// Enable BLE scan filter.
 Result btdrvEnableBleScanFilter(bool enable);
+/// Register GATT client.
 Result btdrvRegisterGattClient(const GattAttributeUuid *uuid);
+/// Unregister GATT client.
 Result btdrvUnregisterGattClient(u8 index);
+/// Unregister all GATT clients
 Result btdrvUnregisterAllGattClients(void);
+/// Connect to GATT server.
 Result btdrvConnectGattServer(u64 id, u8 iface, const BluetoothAddress *address, bool direct);
 
+/// Cancel connection to GATT server.
 Result btdrvCancelConnectGattServer(u8 iface, const BluetoothAddress *address, bool unk);
+/// Disconnect from GATT server.
 Result btdrvDisconnectGattServer(u32 unk);
+/// Get GATT attribute of device.
 Result btdrvGetGattAttribute(u32 unk, const BluetoothAddress *address);
 
+
 Result btdrvGetGattService(u32 connId, const GattAttributeUuid *filter);
+/// Configure GATT Maximum Transmission Unit.
 Result btdrvConfigureGattMtu(u32 connId, u16 mtu);
+/// Register GATT server.
 Result btdrvRegisterGattServer(const GattAttributeUuid *uuid);
+/// Unregister GATT server.
 Result btdrvUnregisterGattServer(u8 iface);
+/// Connect GATT client.
 Result btdrvConnectGattClient(u8 unk1, const BluetoothAddress *address, bool unk2);
+/// Disconnect GATT client.
 Result btdrvDisconnectGattClient(u8 unk);
+/// Add GATT service.
 Result btdrvAddGattService(u8 iface, const GattAttributeUuid *uuid, u8 handle, bool primary);
+/// Enable GATT service
 Result btdrvEnableGattService(u8 iface, const GattAttributeUuid *uuid);
+/// Add GATT characteristic to a service.
 Result btdrvAddGattCharacteristic(u8 iface, const GattAttributeUuid *svcUuid, const GattAttributeUuid *charUuid, u16 permissions, u8 properties);
+/// Add GATT descriptor to a service.
 Result btdrvAddGattDescriptor(u8 iface, const GattAttributeUuid *svcUuid, const GattAttributeUuid *charUuid, u16 permissions);
+/// Get event information for BLE managed event.
 Result btdrvGetBleManagedEventInfo(BleEventType *type, u8 *buffer, u16 length);
+/// Get the first GATT characteristic from a service.
 Result btdrvGetGattFirstCharacteristic(GattId *charOut, u8 *property, u32 connId, const GattId *svcId, bool primary, const GattAttributeUuid *charFilter);
+/// Get the next GATT characteristic from a service.
 Result btdrvGetGattNextCharacteristic(GattId *charOut, u8 *property, u32 connId, const GattId *svcId, bool primary, const GattId *charIn, const GattAttributeUuid *charFilter);
+/// Get the first GATT descriptor from a service.
 Result btdrvGetGattFirstDescriptor(GattId *descrOut, u32 connId, const GattId *svcId, bool primary, const GattId *charIn, const GattAttributeUuid *descrFilter);
+/// Get the next GATT descriptor from a service.
 Result btdrvGetGattNextDescriptor(GattId *descrOut, u32 connId, const GattId *svcId, bool primary, const GattId *charIn, const GattId *descrIn, const GattAttributeUuid *descrFilter);
+/// Register GATT managed data path.
 Result btdrvRegisterGattManagedDataPath(const GattAttributeUuid *uuid);
+/// Unregister GATT managed data path.
 Result btdrvUnregisterGattManagedDataPath(const GattAttributeUuid *uuid);
+/// Register GATT HID data path.
 Result btdrvRegisterGattHidDataPath(const GattAttributeUuid *uuid);
+/// Unregister GATT HID data path.
 Result btdrvUnregisterGattHidDataPath(const GattAttributeUuid *uuid);
+/// Register GATT data path.
 Result btdrvRegisterGattDataPath(const GattAttributeUuid *uuid);
+/// Unregister GATT data path.
 Result btdrvUnregisterGattDataPath(const GattAttributeUuid *uuid);
+/// Read GATT charateristic.
 Result btdrvReadGattCharacteristic(u32 connId, const GattId *svcId, bool primary, const GattId *charId, u8 auth);
+/// Read GATT descriptor.
 Result btdrvReadGattDescriptor(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const GattId *descrId, u8 auth);
+/// Write GATT Characteristic.
 Result btdrvWriteGattCharacteristic(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const u8 *data, u16 length, u8 auth, bool response);
+/// Write GATT descriptor.
 Result btdrvWriteGattDescriptor(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const GattId *descrId, const u8 *data, u16 length, u8 auth);
+/// Register GATT notification.
 Result btdrvRegisterGattNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId);
+/// Unregister GATT notification.
 Result btdrvUnregisterGattNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId);
+/// Get event information for BLE HID event.
 Result btdrvGetLeHidEventInfo(BleHidventType *type, u8 *buffer, u16 length);
+/// Register for BLE HID event notifications.
 Result btdrvRegisterBleHidEvent(Event *event);
+/// Set BLE scan parameter.
 Result btdrvSetBleScanParameter(u16 interval, u16 window);
 
 // Other
