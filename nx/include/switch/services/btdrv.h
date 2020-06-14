@@ -385,30 +385,44 @@ Result btdrvFinalizeHid(void);
 /// Get HID event data.
 Result btdrvGetHidEventInfo(HidEventType *type, u8 *buffer, u16 length);
 
+/// Set TSI for a device.
 Result btdrvSetTsi(const BluetoothAddress *address, u8 tsi);
+/// Enable burst mode for a device.
 Result btdrvEnableBurstMode(const BluetoothAddress *address, bool burst);
+/// Set zero retransmission for a device.
 Result btdrvSetZeroRetransmission(const BluetoothAddress *address, u8 *ids, u8 num);
+/// Enable/disable MC mode.
 Result btdrvEnableMcMode(bool enable);
+/// Enable LLR scan.
 Result btdrvEnableLlrScan(void);
+/// Disable LLR scan.
 Result btdrvDisableLlrScan(void);
+/// Enable/disable blueooth radio.
 Result btdrvEnableRadio(bool enable);
+/// Set bluetooth discoverability and connectability.
 Result btdrvSetVisibility(bool discoverable, bool connectable);
+/// Enable/disable TBFC (Triggered Broadcom Fast Connect) scan.
 Result btdrvEnableTbfcScan(bool enable);
 
 /// Register HID report event.
 Result btdrvRegisterHidReportEvent(Event *event);
 /// Get HID report event type and data.
 Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length);
-
+/// Get latest PLR.
 Result btdrvGetLatestPlr(PlrList *plr);
 //(3.0.0+)
+/// Get the number of pending connections.
 Result btdrvGetPendingConnections(void);
+/// Get current AFH channel map.
 Result btdrvGetChannelMap(ChannelMapList *map);
+/// Enable/disable transmit power boost setting.
 Result btdrvEnableTxPowerBoostSetting(bool enable);
+/// Check whether transmit power boost settings is enabled.
 Result btdrvIsTxPowerBoostSettingEnabled(bool *enabled);
+/// Enable/disable AFH setting.
 Result btdrvEnableAfhSetting(bool enable);
+/// Check whether AFh setting is enabled
 Result btdrvIsIsAfhSettingEnabled(bool *enabled);
-
 
 // Bluetooth BLE interface (5.0.0+)
 /// Initialize bluetooth BLE interface.
@@ -521,9 +535,13 @@ Result btdrvRegisterBleHidEvent(Event *event);
 Result btdrvSetBleScanParameter(u16 interval, u16 window);
 
 // Other
+/// Move device to secondary piconet.
 //Result btdrvMoveToSecondaryPiconet();
+/// Check whether bluetooth service is running in manufacturing mode
 Result btdrvIsManufacturingMode(bool *mfmode);
+/// Emulate bluetooth crash.
 //Result btdrvEmulateBluetoothCrash();
+/// Get BLE channel map.
 //Result btdrvGetBleChannelMap();
 
 // nn::bluetooth::CircularBuffer
