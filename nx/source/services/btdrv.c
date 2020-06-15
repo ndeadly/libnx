@@ -1090,14 +1090,16 @@ Result btdrvSetBleScanParameter(u16 interval, u16 window) {
     return serviceDispatchIn(&g_btdrvSrv, 98, in);
 }
 
-/*
-Result btdrvMoveToSecondaryPiconet() {
+Result btdrvMoveToSecondaryPiconet(const BluetoothAddress *address) {
     if (hosversionBefore(10, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return serviceDispatchIn(&g_btdrvSrv, 99, );
+    const struct {
+        BluetoothAddress address;
+    } in = { *address };
+
+    return serviceDispatchIn(&g_btdrvSrv, 99, in);
 }
-*/
 
 Result btdrvIsManufacturingMode(bool *mfmode) {
     if (hosversionBefore(5, 0, 0))
@@ -1106,14 +1108,12 @@ Result btdrvIsManufacturingMode(bool *mfmode) {
     return serviceDispatchOut(&g_btdrvSrv, 256, *mfmode);
 }
 
-/*
-Result btdrvEmulateBluetoothCrash() {
+Result btdrvEmulateBluetoothCrash(u32 unk) {
     if (hosversionBefore(7, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return serviceDispatchIn(&g_btdrvSrv, 257, );
+    return serviceDispatchIn(&g_btdrvSrv, 257, unk);
 }
-*/
 
 /*
 Result btdrvGetBleChannelMap() {

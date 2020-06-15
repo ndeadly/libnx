@@ -536,11 +536,11 @@ Result btdrvSetBleScanParameter(u16 interval, u16 window);
 
 // Other
 /// Move device to secondary piconet.
-//Result btdrvMoveToSecondaryPiconet();
+Result btdrvMoveToSecondaryPiconet(const BluetoothAddress *address);
 /// Check whether bluetooth service is running in manufacturing mode
 Result btdrvIsManufacturingMode(bool *mfmode);
 /// Emulate bluetooth crash.
-//Result btdrvEmulateBluetoothCrash();
+Result btdrvEmulateBluetoothCrash(u32 unk);
 /// Get BLE channel map.
 //Result btdrvGetBleChannelMap();
 
