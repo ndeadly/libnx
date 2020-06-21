@@ -32,7 +32,7 @@ typedef struct {
     u32                 _unk0;
     bool                _unk1;
     bool                _unk2;
-    u8                  paired_count;
+    u8                  max_count;
     u8                  connected_count;
     BtmConnectedDevice  devices[8];
 } BtmDeviceCondition;
@@ -47,12 +47,12 @@ typedef struct {
     u16                     vid;
     u16                     pid;
     u8                      _unk2[0x1c];
-} BtmDeviceInfo;
+} BtmDevice;
 
 typedef struct {
     u32 count;
-    BtmDeviceInfo devices[10];
-} BtmPairedDevices;
+    BtmDevice devices[10];
+} BtmDeviceInfo;
 
 /// Initialize btm.
 Result btmInitialize(void);
@@ -70,8 +70,8 @@ Result btmGetDeviceCondition(BtmDeviceCondition *condition);
 //Result btmSetBluetoothMode();
 //Result btmSetWlanMode();
 Result btmAcquireDeviceInfoEvent(Event *event, u8 *flags);
-Result btmGetDeviceInfo(BtmPairedDevices *devices);
-Result btmAddDeviceInfo(const BtmDeviceInfo *info);
+Result btmGetDeviceInfo(BtmDeviceInfo *devices);
+Result btmAddDeviceInfo(const BtmDevice *info);
 Result btmRemoveDeviceInfo(const BluetoothAddress *address);
 Result btmIncreaseDeviceInfoOrder(const BluetoothAddress *address);
 //Result btmLlrNotify();

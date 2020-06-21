@@ -83,16 +83,16 @@ Result btmAcquireDeviceInfoEvent(Event *event, u8 *flags) {
     return rc;
 }
 
-Result btmGetDeviceInfo(BtmPairedDevices *devices) {
+Result btmGetDeviceInfo(BtmDeviceInfo *devices) {
     return serviceDispatch(&g_btmSrv, 9,
         .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_Out },
-        .buffers = { {devices, sizeof(BtmPairedDevices)} }
+        .buffers = { {devices, sizeof(BtmDeviceInfo)} }
     );
 }
 
-Result btmAddDeviceInfo(const BtmDeviceInfo *info) {
+Result btmAddDeviceInfo(const BtmDevice *info) {
     const struct {
-        BtmDeviceInfo info;
+        BtmDevice info;
     } in = { *info };
 
     return serviceDispatchIn(&g_btmSrv, 10, in);
