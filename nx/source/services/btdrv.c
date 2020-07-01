@@ -277,7 +277,7 @@ Result btdrvFinalizeHid(void) {
     return serviceDispatch(&g_btdrvSrv, 26);
 }
 
-Result btdrvGetHidEventInfo(HidEventType *type, u8 *buffer, u16 length) {
+Result btdrvGetHidEventInfo(BluetoothHidEventType *type, u8 *buffer, u16 length) {
     return serviceDispatchOut(&g_btdrvSrv, 27, *type,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_Out },
         .buffers = { {buffer, length} }
@@ -377,7 +377,7 @@ Result btdrvRegisterHidReportEvent(Event *event) {
     return rc;
 }
 
-Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length)
+Result btdrvGetHidReportEventInfo(BluetoothHidEventType *type, u8 *buffer, u16 length)
 {
     if (hosversionBefore(7, 0, 0)) {
         return serviceDispatchOut(&g_btdrvSrv, hosversionBefore(4, 0, 0) ? 37 : 38, *type,
@@ -387,7 +387,7 @@ Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length)
     }
     else {
         u32 eventType;
-        HidEventData *eventData = (HidEventData *)buffer; 
+        BluetoothHidEventData *eventData = (BluetoothHidEventData *)buffer; 
         HidReportDataPacket *packet = (HidReportDataPacket *)ReadBuffer(g_btdrvCircularBuffer);
               
         while (true) {
@@ -841,7 +841,7 @@ Result btdrvAddGattDescriptor(u8 iface, const GattAttributeUuid *svcUuid, const 
     return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 76 : 78, in);
 }
 
-Result btdrvGetBleManagedEventInfo(BleEventType *type, u8 *buffer, u16 length) {
+Result btdrvGetBleManagedEventInfo(BluetoothBleEventType *type, u8 *buffer, u16 length) {
     if (hosversionBefore(5, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
@@ -1052,7 +1052,7 @@ Result btdrvUnregisterGattNotification(u32 connId, const GattId *svcId, bool pri
     return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 93 : 95, in);
 }
 
-Result btdrvGetLeHidEventInfo(BleHidventType *type, u8 *buffer, u16 length) {
+Result btdrvGetLeHidEventInfo(BluetoothBleHidventType *type, u8 *buffer, u16 length) {
     if (hosversionBefore(5, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 

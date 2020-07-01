@@ -161,7 +161,7 @@ Result btLeSendIndication(u8 a, const GattAttributeUuid *b, const GattAttributeU
     );
 };
 
-Result btGetLeEventInfo(BleEventType *type, u8 *buffer, u16 length) {
+Result btGetLeEventInfo(BluetoothBleEventType *type, u8 *buffer, u16 length) {
     u64 aruid = appletGetAppletResourceUserId();
 
     return serviceDispatchInOut(&g_btSrv, 8, aruid, *type,

@@ -98,7 +98,7 @@ typedef enum  {
     HidEvent_Unknown07,
     HidEvent_Unknown08,
     HidEvent_Unknown09,
-} HidEventType;
+} BluetoothHidEventType;
 
 /*
 typedef enum  {
@@ -138,7 +138,7 @@ typedef enum {
     HidStatus_ErrorNoResources,
     HidStatus_ErrorAuthenicationFailed,
     HidStatus_ErrorHdl
-} HidStatus;
+} BluetoothHidStatus;
 
 typedef enum {
     HidConnectionState_Connected                    = 0,
@@ -151,15 +151,15 @@ typedef enum {
     HidConnectionState_FailedNoBluetoothHidDriver,
     HidConnectionState_FailedGeneric,
     HidConnectionState_Unknown
-} HidConnectionState;
+} BluetoothHidConnectionState;
 
 typedef enum {
     BleEventType_Unknown
-} BleEventType;
+} BluetoothBleEventType;
 
 typedef enum {
     BleHidventType_Unknown
-} BleHidventType;
+} BluetoothBleHidventType;
 
 typedef char BluetoothName[0xf9];
 typedef char BluetoothLocalName[0x20];
@@ -274,17 +274,17 @@ typedef union {
 
 typedef union {
     struct {
-        BluetoothAddress    address;
-        HidConnectionState  state;
+        BluetoothAddress            address;
+        BluetoothHidConnectionState state;
     } connectionState;
 
     struct {
         BluetoothAddress    address;
-        HidStatus           status;
+        BluetoothHidStatus  status;
         u32 	            report_length;
         HidReportData		report_data;
     } getReport;
-} HidEventData;
+} BluetoothHidEventData;
 
 typedef struct {
     u8 unk[0xa4];
@@ -314,6 +314,9 @@ typedef struct {
     u8 unk[0x18];
 } GattId;
 
+typedef struct {
+
+} BluetoothBleEventData;
 
 /// Initialize btdrv.
 Result btdrvInitialize(void);
@@ -383,7 +386,7 @@ Result btdrvGetPairedDeviceInfo(const BluetoothAddress *address, BluetoothDevice
 /// Clean up HID host interface.
 Result btdrvFinalizeHid(void);
 /// Get HID event data.
-Result btdrvGetHidEventInfo(HidEventType *type, u8 *buffer, u16 length);
+Result btdrvGetHidEventInfo(BluetoothHidEventType *type, u8 *buffer, u16 length);
 
 /// Set TSI for a device.
 Result btdrvSetTsi(const BluetoothAddress *address, u8 tsi);
@@ -407,7 +410,7 @@ Result btdrvEnableTbfcScan(bool enable);
 /// Register HID report event.
 Result btdrvRegisterHidReportEvent(Event *event);
 /// Get HID report event type and data.
-Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length);
+Result btdrvGetHidReportEventInfo(BluetoothHidEventType *type, u8 *buffer, u16 length);
 /// Get latest PLR.
 Result btdrvGetLatestPlr(PlrList *plr);
 //(3.0.0+)
@@ -494,7 +497,7 @@ Result btdrvAddGattCharacteristic(u8 iface, const GattAttributeUuid *svcUuid, co
 /// Add GATT descriptor to a service.
 Result btdrvAddGattDescriptor(u8 iface, const GattAttributeUuid *svcUuid, const GattAttributeUuid *charUuid, u16 permissions);
 /// Get event information for BLE managed event.
-Result btdrvGetBleManagedEventInfo(BleEventType *type, u8 *buffer, u16 length);
+Result btdrvGetBleManagedEventInfo(BluetoothBleEventType *type, u8 *buffer, u16 length);
 /// Get the first GATT characteristic from a service.
 Result btdrvGetGattFirstCharacteristic(GattId *charOut, u8 *property, u32 connId, const GattId *svcId, bool primary, const GattAttributeUuid *charFilter);
 /// Get the next GATT characteristic from a service.
@@ -528,7 +531,7 @@ Result btdrvRegisterGattNotification(u32 connId, const GattId *svcId, bool prima
 /// Unregister GATT notification.
 Result btdrvUnregisterGattNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId);
 /// Get event information for BLE HID event.
-Result btdrvGetLeHidEventInfo(BleHidventType *type, u8 *buffer, u16 length);
+Result btdrvGetLeHidEventInfo(BluetoothBleHidventType *type, u8 *buffer, u16 length);
 /// Register for BLE HID event notifications.
 Result btdrvRegisterBleHidEvent(Event *event);
 /// Set BLE scan parameter.

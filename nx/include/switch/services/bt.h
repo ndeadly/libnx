@@ -25,5 +25,5 @@ Result btLeClientRegisterNotification(u32 connId, const GattId *svcId, bool prim
 Result btLeClientDeregisterNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId);
 Result btSetLeResponse(u8 a, const GattAttributeUuid *b, const GattAttributeUuid *c, const void *data, u32 length);
 Result btLeSendIndication(u8 a, const GattAttributeUuid *b, const GattAttributeUuid *c, const void *data, u32 length, bool f);
-Result btGetLeEventInfo(BleEventType *type, u8 *buffer, u16 length);
+Result btGetLeEventInfo(BluetoothBleEventType *type, u8 *buffer, u16 length);
 Result btRegisterBleEvent(Event *event);
