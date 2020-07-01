@@ -424,9 +424,9 @@ Result btdrvGetHidReportEventInfo(HidEventType *type, u8 *buffer, u16 length)
                 //memcpy(&eventData->report_data, &packet->report_data, sizeof(HidReportData));
                 eventData->getReport.report_data.size = (u16)packet->header.size;
                 memcpy(&eventData->getReport.report_data.address, &eventData->getReport.address, sizeof(BluetoothAddress));
-                memcpy(&eventData->getReport.report_data.data, 
-                        hosversionAtLeast(9, 0, 0) ? &packet->data.v2.data : &packet->data.data, 
-                        sizeof(BluetoothHidData));
+                memcpy(&eventData->getReport.report_data.report, 
+                        hosversionAtLeast(9, 0, 0) ? &packet->data.v2.report : &packet->data.report, 
+                        sizeof(HidReport));
                 break;
 
             case HidEvent_Unknown08:
