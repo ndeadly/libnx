@@ -114,7 +114,7 @@ typedef enum  {
     HidHostEvent_SetIdle,
     HidHostEvent_GetDscpInfo,
     HidHostEvent_VcUnplug
-} HidEventType;
+} BluetoothHidEventType;
 */
 
 typedef enum {
@@ -194,21 +194,14 @@ typedef struct {
     u8                    key_type;
     u8                    _unk1[100];
 
-    // Pad out to 0x200. Think this is what HOS uses
+    // Pad out to 0x200. This is the size HOS uses
     u8                    _pad[0xd0];
 } BluetoothDevicesSettings;
 
 typedef struct {
-    u16 length;
+    u16 size;
     u8  data[0x280];
-} BluetoothHidData;
-
-typedef struct {
-	u8                  type;
-    u8                  _unk2;
-    u8                  id; 
-	u8					data[0x27f]; // need to revise if this is real size
-} HidReport;
+} BluetoothHidReport;
 
 typedef union {
     // Pre 9.0.0
@@ -217,16 +210,16 @@ typedef union {
         u8                  _unk0;      //possibly controller id?
         BluetoothAddress    address;
         u8                  _unk1[3];
-        HidReport	        report;
+        BluetoothHidReport	report;
     };
     // 9.0.0+
     struct {
         u8                  _unk0[5];
         BluetoothAddress    address;
         u8                  _unk1;
-        HidReport	        report;
+        BluetoothHidReport	report;
     } v2;
-} HidReportData;
+} BluetoothHidReportData;
 
 typedef union {
     struct __attribute__ ((__packed__)) {
@@ -279,10 +272,10 @@ typedef union {
     } connectionState;
 
     struct {
-        BluetoothAddress    address;
-        BluetoothHidStatus  status;
-        u32 	            report_length;
-        HidReportData		report_data;
+        BluetoothAddress        address;
+        BluetoothHidStatus      status;
+        u32 	                report_length;
+        BluetoothHidReportData	report_data;
     } getReport;
 } BluetoothHidEventData;
 
@@ -370,11 +363,11 @@ Result btdrvOpenHidConnection(const BluetoothAddress *address);
 /// Disconnect bluetooth device.
 Result btdrvCloseHidConnection(const BluetoothAddress *address);
 /// Send raw data to device.
-Result btdrvWriteHidData(const BluetoothAddress *address, const BluetoothHidData *data);
+Result btdrvWriteHidData(const BluetoothAddress *address, const BluetoothHidReport *data);
 /// Send raw data to device.
 Result btdrvWriteHidData2(const BluetoothAddress *address, const u8 *buffer, u16 length);
 /// Send set report to device.
-Result btdrvSetHidReport(const BluetoothAddress *address, BluetoothHhReportType type, const BluetoothHidData *data);
+Result btdrvSetHidReport(const BluetoothAddress *address, BluetoothHhReportType type, const BluetoothHidReport *data);
 /// Send get report to device.
 Result btdrvGetHidReport(const BluetoothAddress *address, BluetoothHhReportType type, u8 id);
 /// Wake up bluetooth device.
@@ -571,7 +564,7 @@ typedef struct {
 
 typedef struct {
     BufferPacketHeader header;
-    HidReportData data;
+    BluetoothHidReportData data;
 } BufferPacket;
 
 // Format of packets written to nn::bluetooth::CircularBuffer
@@ -584,7 +577,7 @@ typedef struct {
         u64 size;           //+0x10
     } header;
 
-    HidReportData data;
+    BluetoothHidReportData data;
 } HidReportDataPacket;
 
 // nn::bluetooth::CircularBuffer::CircularBuffer

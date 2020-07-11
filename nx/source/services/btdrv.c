@@ -109,9 +109,7 @@ Result btdrvCreateBond(const BluetoothAddress *address, BluetoothTransport trans
     else {
         const struct {
             BluetoothAddress    address;
-            //u16                  _pad;
             BluetoothTransport  transport;
-        //} in = { *address, 0, transport };
         } in = { *address, transport };
         
         return serviceDispatchIn(&g_btdrvSrv, 10, in);
@@ -192,14 +190,14 @@ Result btdrvCloseHidConnection(const BluetoothAddress *address) {
     return serviceDispatchIn(&g_btdrvSrv, 18, in);
 }
 
-Result btdrvWriteHidData(const BluetoothAddress *address, const BluetoothHidData *data) {
+Result btdrvWriteHidData(const BluetoothAddress *address, const BluetoothHidReport *data) {
     const struct {
         BluetoothAddress address;
     } in = { *address };
 
     return serviceDispatchIn(&g_btdrvSrv, 19, in,
         .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_In },
-        .buffers = { {data, sizeof(BluetoothHidData)} }
+        .buffers = { {data, sizeof(BluetoothHidReport)} }
     );
 }
 
@@ -214,7 +212,7 @@ Result btdrvWriteHidData2(const BluetoothAddress *address, const u8 *buffer, u16
     );
 }
 
-Result btdrvSetHidReport(const BluetoothAddress *address, BluetoothHhReportType type, const BluetoothHidData *data) {
+Result btdrvSetHidReport(const BluetoothAddress *address, BluetoothHhReportType type, const BluetoothHidReport *data) {
     const struct {
         BluetoothAddress address;
         BluetoothHhReportType type;
@@ -222,7 +220,7 @@ Result btdrvSetHidReport(const BluetoothAddress *address, BluetoothHhReportType 
 
     return serviceDispatchIn(&g_btdrvSrv, 21, in,
         .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_In },
-        .buffers = { {data, sizeof(BluetoothHidData)} }
+        .buffers = { {data, sizeof(BluetoothHidReport)} }
     );
 }
 
@@ -426,7 +424,7 @@ Result btdrvGetHidReportEventInfo(BluetoothHidEventType *type, u8 *buffer, u16 l
                 memcpy(&eventData->getReport.report_data.address, &eventData->getReport.address, sizeof(BluetoothAddress));
                 memcpy(&eventData->getReport.report_data.report, 
                         hosversionAtLeast(9, 0, 0) ? &packet->data.v2.report : &packet->data.report, 
-                        sizeof(HidReport));
+                        sizeof(BluetoothHidReport));
                 break;
 
             case HidEvent_Unknown08:
