@@ -277,6 +277,20 @@ typedef union {
         u32 	                report_length;
         BluetoothHidReportData	report_data;
     } getReport;
+
+    union {
+        struct {
+            BluetoothAddress    address;
+            u32                 _unk0;
+            u32                 _unk1;                 
+        };
+        struct {
+            u32                 _unk0;
+            u32                 _unk1;
+            BluetoothAddress    address;                 
+        } v2;
+    } unknown07;
+
 } BluetoothHidEventData;
 
 typedef struct {
