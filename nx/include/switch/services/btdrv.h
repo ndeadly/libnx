@@ -203,22 +203,24 @@ typedef struct {
     u8  data[0x280];
 } BluetoothHidReport;
 
-typedef union {
-    // Pre 9.0.0
-    struct {
-        u16                 size;
-        u8                  _unk0;      //possibly controller id?
-        BluetoothAddress    address;
-        u8                  _unk1[3];
-        BluetoothHidReport	report;
+typedef struct {
+    union {
+        // Pre 9.0.0
+        struct {
+            u16                 size;
+            u8                  _unk0;      //possibly controller id?
+            BluetoothAddress    address;
+            u8                  _unk1[3];
+        };
+        // 9.0.0+
+        struct {
+            u8                  _unk0[5];
+            BluetoothAddress    address;
+            u8                  _unk1;
+        } v2;
     };
-    // 9.0.0+
-    struct {
-        u8                  _unk0[5];
-        BluetoothAddress    address;
-        u8                  _unk1;
-        BluetoothHidReport	report;
-    } v2;
+    
+    BluetoothHidReport	report;
 } BluetoothHidReportData;
 
 typedef union {

@@ -423,7 +423,7 @@ Result btdrvGetHidReportEventInfo(BluetoothHidEventType *type, u8 *buffer, u16 l
                 eventData->getReport.report_data.size = (u16)packet->header.size;
                 memcpy(&eventData->getReport.report_data.address, &eventData->getReport.address, sizeof(BluetoothAddress));
                 memcpy(&eventData->getReport.report_data.report, 
-                        hosversionAtLeast(9, 0, 0) ? &packet->data.v2.report : &packet->data.report, 
+                        &packet->data.report, 
                         sizeof(BluetoothHidReport));
                 break;
 
