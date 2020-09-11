@@ -28,13 +28,47 @@ typedef struct {
     u8                      _unk2[0x20];
 } BtmConnectedDevice;
 
+/* 1.0.0 - 5.0.2 */
 typedef struct {
     u32                 _unk0;
-    bool                _unk1;
-    bool                _unk2;
+    u32                 _unk1;
+    u8                  _unk2;
+    u8                  _unk3;
     u8                  max_count;
     u8                  connected_count;
     BtmConnectedDevice  devices[8];
+} BtmDeviceConditionV100;
+
+/* 5.1.0 - 7.0.1 */
+typedef struct {
+    u32                 _unk0;
+    u32                 _unk1;
+    u8                  _unk2;
+    u8                  _unk3[2];
+    u8                  max_count;
+    u8                  connected_count;
+    u8                  pad[3];
+    BtmConnectedDevice  devices[8];
+} BtmDeviceConditionV510;
+
+/* 8.0.0 - 8.1.1 */
+typedef BtmDeviceConditionV100 BtmDeviceConditionV800;
+
+/* 9.0.0+ */
+typedef struct {
+    u32                 _unk0;
+    u8                  _unk1;
+    u8                  _unk2;
+    u8                  max_count;
+    u8                  connected_count;
+    BtmConnectedDevice  devices[8];
+} BtmDeviceConditionV900;
+
+typedef union {
+    BtmDeviceConditionV100 v100;
+    BtmDeviceConditionV510 v510;
+    BtmDeviceConditionV800 v800;
+    BtmDeviceConditionV900 v900;
 } BtmDeviceCondition;
 
 typedef struct {

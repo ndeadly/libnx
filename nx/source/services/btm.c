@@ -50,9 +50,19 @@ Result btmAcquireDeviceConditionEvent(Event *event, u8 *flags) {
 }
 
 Result btmGetDeviceCondition(BtmDeviceCondition *condition) {
+    size_t size;
+    if (hosversionBefore(5, 1, 0))
+        size = sizeof(BtmDeviceConditionV100);
+    else if (hosversionBefore(8, 0, 0))
+        size = sizeof(BtmDeviceConditionV510);
+    else if (hosversionBefore(9, 0, 0))
+        size = sizeof(BtmDeviceConditionV800);
+    else
+        size = sizeof(BtmDeviceConditionV900);
+
     return serviceDispatch(&g_btmSrv, 3,
         .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_Out },
-        .buffers = { {condition, sizeof(BtmDeviceCondition)} }
+        .buffers = { {condition, size} }
     );
 }
 
