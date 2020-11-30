@@ -159,7 +159,7 @@ typedef enum {
 
 typedef enum {
     BleHidventType_Unknown
-} BluetoothBleHidventType;
+} BluetoothBleHidEventType;
 
 typedef char BluetoothName[0xf9];
 typedef char BluetoothLocalName[0x20];
@@ -296,6 +296,14 @@ typedef union {
 } BluetoothHidEventData;
 
 typedef struct {
+    uint8_t raw[0x400];
+} BluetoothBleEventData;
+
+typedef struct {
+    uint8_t raw[0x400];
+} BluetoothBleHidEventData;
+
+typedef struct {
     u8 unk[0xa4];
 } PlrList;
 
@@ -325,10 +333,6 @@ typedef struct {
     u8 pad[3];
     GattAttributeUuid uuid;
 } GattId;
-
-typedef struct {
-
-} BluetoothBleEventData;
 
 /// Initialize btdrv.
 Result btdrvInitialize(void);
@@ -543,7 +547,7 @@ Result btdrvRegisterGattNotification(u32 connId, const GattId *svcId, bool prima
 /// Unregister GATT notification.
 Result btdrvUnregisterGattNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId);
 /// Get event information for BLE HID event.
-Result btdrvGetLeHidEventInfo(BluetoothBleHidventType *type, u8 *buffer, u16 length);
+Result btdrvGetLeHidEventInfo(BluetoothBleHidEventType *type, u8 *buffer, u16 length);
 /// Register for BLE HID event notifications.
 Result btdrvRegisterBleHidEvent(Event *event);
 /// Set BLE scan parameter.

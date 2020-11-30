@@ -1088,7 +1088,7 @@ Result btdrvUnregisterGattNotification(u32 connId, const GattId *svcId, bool pri
     return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 93 : 95, in);
 }
 
-Result btdrvGetLeHidEventInfo(BluetoothBleHidventType *type, u8 *buffer, u16 length) {
+Result btdrvGetLeHidEventInfo(BluetoothBleHidEventType *type, u8 *buffer, u16 length) {
     if (hosversionBefore(5, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
