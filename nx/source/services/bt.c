@@ -20,146 +20,140 @@ Service* btGetServiceSession(void) {
 }
 
 Result btLeClientReadCharacteristic(u32 connId, const GattId *svcId, bool primary, const GattId *charId, u8 auth) {
-    u64 aruid = appletGetAppletResourceUserId();
-
     const struct {
-        u64     aruid; 
+        bool    primary;
+        u8      auth;
+        u8 pad[2];
         u32     connId;
         GattId  svcId;
-        bool    primary;
         GattId  charId;
-        u8      auth;
-    } in = { aruid, connId, *svcId, primary, *charId, auth };
+        u64     aruid; 
+    } in = { primary, auth, {0}, connId, *svcId, *charId, appletGetAppletResourceUserId() };
 
     return serviceDispatchIn(&g_btSrv, 0, in,
         .in_send_pid = true
     );
-};
+}
 
 Result btLeClientReadDescriptor(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const GattId *descrId, u8 auth) {
-    u64 aruid = appletGetAppletResourceUserId();
-
     const struct {
-        u64     aruid; 
+        bool    primary;
+        u8      auth;
+        u8      pad[2];
         u32     connId;
         GattId  svcId;
-        bool    primary;
         GattId  charId;
         GattId  descrId;
-        u8      auth;
-    } in = { aruid, connId, *svcId, primary, *charId, *descrId, auth };
+        u64     aruid; 
+    } in = { primary, auth, {0}, connId, *svcId, *charId, *descrId, appletGetAppletResourceUserId() };
 
     return serviceDispatchIn(&g_btSrv, 1, in,
         .in_send_pid = true
     );
-};
+}
 
 Result btLeClientWriteCharacteristic(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const void *data, u32 length, u8 auth, bool response) {
-    u64 aruid = appletGetAppletResourceUserId();
-
     const struct {
-        u64     aruid;
-        u32     connId;
-        GattId  svcId;
         bool    primary;
-        GattId  charId;
         u8      auth;
         bool    response;
-    } in = { aruid, connId, *svcId, primary, *charId, auth, response };
+        u8      pad;
+        u32     connId;
+        GattId  svcId;
+        GattId  charId;
+        u64     aruid;
+    } in = { primary, auth, response, 0, connId, *svcId, *charId, appletGetAppletResourceUserId() };
 
     return serviceDispatchIn(&g_btSrv, 2, in,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
         .buffers = { {data, length} },
         .in_send_pid = true
     );
-};
+}
 
 Result btLeClientWriteDescriptor(u32 connId, const GattId *svcId, bool primary, const GattId *charId, const GattId *descrId, const void *data, u32 length, u8 auth) {
-    u64 aruid = appletGetAppletResourceUserId();
-
     const struct {
-        u64 aruid;
+        bool primary;
+        u8 auth;
+        u8 pad[2];
         u32 connId;
         GattId svcId;
-        bool primary;
         GattId charId;
         GattId descrId;
-        u8 auth;
-    } in = { aruid, connId, *svcId, primary, *charId, *descrId, auth };
+        u64 aruid;
+    } in = { primary, auth, {0}, connId, *svcId, *charId, *descrId, appletGetAppletResourceUserId() };
 
     return serviceDispatchIn(&g_btSrv, 3, in,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
         .buffers = { {data, length} },
         .in_send_pid = true
     );
-};
+}
 
 Result btLeClientRegisterNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId) {
-    u64 aruid = appletGetAppletResourceUserId();
-
     const struct {
-        u64     aruid;
+        bool    primary;
+        u8      pad[3];
         u32     connId;
         GattId  svcId;
-        bool    primary;
         GattId  charId;
-    } in = { aruid, connId, *svcId, primary, *charId };
+        u64     aruid;
+    } in = { primary, {0}, connId, *svcId, *charId, appletGetAppletResourceUserId() };
 
     return serviceDispatchIn(&g_btSrv, 4, in,
         .in_send_pid = true
     );
-};
+}
 
 Result btLeClientDeregisterNotification(u32 connId, const GattId *svcId, bool primary, const GattId *charId) {
-    u64 aruid = appletGetAppletResourceUserId();
-
     const struct {
-        u64     aruid;
+        bool    primary;
+        u8      pad[3];
         u32     connId;
         GattId  svcId;
-        bool    primary;
         GattId  charId;
-    } in = { aruid, connId, *svcId, primary, *charId };
+        u64     aruid;
+    } in = { primary, {0}, connId, *svcId, *charId, appletGetAppletResourceUserId() };
 
     return serviceDispatchIn(&g_btSrv, 5, in,
         .in_send_pid = true
     );
-};
+}
 
 Result btSetLeResponse(u8 a, const GattAttributeUuid *b, const GattAttributeUuid *c, const void *data, u32 length) {
-    u64 aruid = appletGetAppletResourceUserId();
-
     const struct {
-        u64 aruid;
         u8 a;
+        u8 pad[3];
         GattAttributeUuid b;
         GattAttributeUuid c;
-    } in = { aruid, a, *b, *c };
+        u8 pad2[4];
+        u64 aruid;
+    } in = {  a, {0}, *b, *c, {0}, appletGetAppletResourceUserId() };
 
     return serviceDispatchIn(&g_btSrv, 6, in,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
         .buffers = { {data, length} },
         .in_send_pid = true
     );
-};
+}
 
 Result btLeSendIndication(u8 a, const GattAttributeUuid *b, const GattAttributeUuid *c, const void *data, u32 length, bool f) {
-    u64 aruid = appletGetAppletResourceUserId();
-
     const struct {
-        u64 aruid;
         u8 a;
+        bool f;
+        u8 pad[2];
         GattAttributeUuid b;
         GattAttributeUuid c;
-        bool f;
-    } in = { aruid, a, *b, *c, f };
+        u8 pad2[4];
+        u64 aruid;
+    } in = { a, f, {0}, *b, *c, {0}, appletGetAppletResourceUserId() };
 
     return serviceDispatchIn(&g_btSrv, 7, in,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
         .buffers = { {data, length} },
         .in_send_pid = true
     );
-};
+}
 
 Result btGetLeEventInfo(BluetoothBleEventType *type, u8 *buffer, u16 length) {
     u64 aruid = appletGetAppletResourceUserId();
@@ -169,7 +163,7 @@ Result btGetLeEventInfo(BluetoothBleEventType *type, u8 *buffer, u16 length) {
         .buffers = { {buffer, length} },
         .in_send_pid = true
     );
-};
+}
 
 Result btRegisterBleEvent(Event *event) {
     Handle handle = INVALID_HANDLE;
@@ -185,4 +179,4 @@ Result btRegisterBleEvent(Event *event) {
         eventLoadRemote(event, handle, true);
 
     return rc;
-};
+}

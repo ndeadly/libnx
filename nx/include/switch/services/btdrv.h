@@ -316,11 +316,14 @@ typedef struct {
 } BleAdvertiseFilter;
 
 typedef struct {
-    u8 unk[0x14];
+    u32 size;
+    u8 uuid[0x10];
 } GattAttributeUuid; 
 
 typedef struct {
-    u8 unk[0x18];
+    u8 instance_id;
+    u8 pad[3];
+    GattAttributeUuid uuid;
 } GattId;
 
 typedef struct {
@@ -488,7 +491,7 @@ Result btdrvGetGattAttribute(u32 unk, const BluetoothAddress *address);
 
 Result btdrvGetGattService(u32 connId, const GattAttributeUuid *filter);
 /// Configure GATT Maximum Transmission Unit.
-Result btdrvConfigureGattMtu(u32 connId, u16 mtu);
+Result btdrvConfigureAttMtu(u32 connId, u16 mtu);
 /// Register GATT server.
 Result btdrvRegisterGattServer(const GattAttributeUuid *uuid);
 /// Unregister GATT server.
