@@ -66,22 +66,14 @@ Result btdrvGetAdapterProperties(BluetoothAdapterProperty *property) {
 }
 
 Result btdrvGetAdapterProperty(BluetoothPropertyType type, u8 *value, u16 size) {
-    const struct {
-        BluetoothPropertyType type;
-    } in = { type };
-
-    return serviceDispatchIn(&g_btdrvSrv, 6, in,
+    return serviceDispatchIn(&g_btdrvSrv, 6, type,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_Out },
         .buffers = { {value, size} }
     );
 }
 
 Result btdrvSetAdapterProperty(BluetoothPropertyType type, const u8 *value, u16 size) {
-    const struct {
-        BluetoothPropertyType type;
-    } in = { type };
-
-    return serviceDispatchIn(&g_btdrvSrv, 7, in,
+    return serviceDispatchIn(&g_btdrvSrv, 7, type,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
         .buffers = { {value, size} }
     );
@@ -96,12 +88,8 @@ Result btdrvStopInquiry(void) {
 }
 
 Result btdrvCreateBond(const BluetoothAddress *address, BluetoothTransport transport) {
-    if (hosversionBefore(9, 0, 0)) {
-        const struct {
-            BluetoothAddress address;
-        } in = { *address };
-        
-        return serviceDispatchIn(&g_btdrvSrv, 10, in,
+    if (hosversionBefore(9, 0, 0)) {       
+        return serviceDispatchIn(&g_btdrvSrv, 10, *address,
             .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_In },
             .buffers = { {&transport, sizeof(BluetoothTransport)} }
         );
@@ -117,19 +105,11 @@ Result btdrvCreateBond(const BluetoothAddress *address, BluetoothTransport trans
 }
 
 Result btdrvRemoveBond(const BluetoothAddress *address) {
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
-
-    return serviceDispatchIn(&g_btdrvSrv, 11, in);
+    return serviceDispatchIn(&g_btdrvSrv, 11, *address);
 }
 
 Result btdrvCancelBond(const BluetoothAddress *address) {
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
-
-    return serviceDispatchIn(&g_btdrvSrv, 12, in);
+    return serviceDispatchIn(&g_btdrvSrv, 12, *address);
 }
 
 Result btdrvRespondToPinRequest(const BluetoothAddress *address, bool accept, const BluetoothPinCode *pincode, u8 length) {
@@ -175,38 +155,22 @@ Result btdrvInitializeHid(Event *event, u16 version) {
 }
 
 Result btdrvOpenHidConnection(const BluetoothAddress *address) {
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
-
-    return serviceDispatchIn(&g_btdrvSrv, 17, in);
+    return serviceDispatchIn(&g_btdrvSrv, 17, *address);
 }
 
 Result btdrvCloseHidConnection(const BluetoothAddress *address) {
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
-
-    return serviceDispatchIn(&g_btdrvSrv, 18, in);
+    return serviceDispatchIn(&g_btdrvSrv, 18, *address);
 }
 
 Result btdrvWriteHidData(const BluetoothAddress *address, const BluetoothHidReport *data) {
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
-
-    return serviceDispatchIn(&g_btdrvSrv, 19, in,
+    return serviceDispatchIn(&g_btdrvSrv, 19, *address,
         .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_In },
         .buffers = { {data, sizeof(BluetoothHidReport)} }
     );
 }
 
 Result btdrvWriteHidData2(const BluetoothAddress *address, const u8 *buffer, u16 length) {
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
-
-    return serviceDispatchIn(&g_btdrvSrv, 20, in,
+    return serviceDispatchIn(&g_btdrvSrv, 20, *address,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
         .buffers = { {buffer, length} }
     );
@@ -236,11 +200,7 @@ Result btdrvGetHidReport(const BluetoothAddress *address, BluetoothHhReportType 
 
 Result btdrvTriggerConnection(const BluetoothAddress *address, u16 unknown) {
     if (hosversionBefore(9, 0, 0)) {
-        const struct {
-            BluetoothAddress address;
-        } in = { *address };
-
-        return serviceDispatchIn(&g_btdrvSrv, 23, in);
+        return serviceDispatchIn(&g_btdrvSrv, 23, *address);
     }
     else {
         const struct {
@@ -261,11 +221,7 @@ Result btdrvAddPairedDeviceInfo(const BluetoothDevicesSettings *device) {
 }
 
 Result btdrvGetPairedDeviceInfo(const BluetoothAddress *address, BluetoothDevicesSettings *device) {
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
-
-    return serviceDispatchIn(&g_btdrvSrv, 25, in,
+    return serviceDispatchIn(&g_btdrvSrv, 25, *address,
         .buffer_attrs = { SfBufferAttr_FixedSize | SfBufferAttr_HipcPointer | SfBufferAttr_Out },
         .buffers = { {device, sizeof(BluetoothDevicesSettings)} }
     );
@@ -301,11 +257,7 @@ Result btdrvEnableBurstMode(const BluetoothAddress *address, bool burst) {
 }
 
 Result btdrvSetZeroRetransmission(const BluetoothAddress *address, u8 *ids, u8 num) {
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
-
-    return serviceDispatchIn(&g_btdrvSrv, 30, in,
+    return serviceDispatchIn(&g_btdrvSrv, 30, *address,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
         .buffers = { {ids, num} }
     );
@@ -543,23 +495,15 @@ Result btdrvSetBleVisibility(bool discoverable, bool connectable) {
 Result btdrvSetBleConnectionParameter(const BleConnectionParameter *param) {
     if (hosversionBefore(5, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
-
-    const struct {
-        BleConnectionParameter param;
-    } in = { *param };
     
-    return serviceDispatchIn(&g_btdrvSrv, 51, in);
+    return serviceDispatchIn(&g_btdrvSrv, 51, *param);
 }
 
 Result btdrvSetBleDefaultConnectionParameter(const BleConnectionParameter *param) {
     if (hosversionBefore(5, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
-
-    const struct {
-        BleConnectionParameter param;
-    } in = { *param };
     
-    return serviceDispatchIn(&g_btdrvSrv, 52, in);
+    return serviceDispatchIn(&g_btdrvSrv, 52, *param);
 }
 
 Result btdrvSetBleAdvertiseData(const BleAdvertisePacketData *advertise) {
@@ -644,11 +588,7 @@ Result btdrvRegisterGattClient(const GattAttributeUuid *uuid) {
     if (hosversionBefore(5, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    const struct {
-        GattAttributeUuid uuid;
-    } in = { *uuid };
-
-    return serviceDispatchIn(&g_btdrvSrv, 62, in);
+    return serviceDispatchIn(&g_btdrvSrv, 62, *uuid);
 }
 
 Result btdrvUnregisterGattClient(u8 index) {
@@ -698,11 +638,7 @@ Result btdrvDisconnectGattServer(u32 unk) {
     if (hosversionBefore(5, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    const struct {
-        u32 unk;
-    } in = { unk };
-
-    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 66 : 67, in);  
+    return serviceDispatchIn(&g_btdrvSrv, hosversionBefore(5, 1, 0) ? 66 : 67, unk);  
 }
 //
 Result btdrvGetGattAttribute(u32 unk, const BluetoothAddress *address) {
@@ -751,11 +687,7 @@ Result btdrvRegisterGattServer(const GattAttributeUuid *uuid) {
     if (hosversionBefore(5, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    const struct {
-        GattAttributeUuid uuid;
-    } in = { *uuid };
-
-    return serviceDispatchIn(&g_btdrvSrv, 71, in);
+    return serviceDispatchIn(&g_btdrvSrv, 71, *uuid);
 }
 //
 Result btdrvUnregisterGattServer(u8 iface) {
@@ -1130,11 +1062,7 @@ Result btdrvMoveToSecondaryPiconet(const BluetoothAddress *address) {
     if (hosversionBefore(10, 0, 0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    const struct {
-        BluetoothAddress address;
-    } in = { *address };
-
-    return serviceDispatchIn(&g_btdrvSrv, 99, in);
+    return serviceDispatchIn(&g_btdrvSrv, 99, *address);
 }
 
 Result btdrvIsManufacturingMode(bool *mfmode) {
