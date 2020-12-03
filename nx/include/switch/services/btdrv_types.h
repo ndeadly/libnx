@@ -12,7 +12,7 @@ typedef enum {
     BtdrvBluetoothPropertyType_Name         =    1,    ///< Name. String, max length 0xF8 excluding NUL-terminator.
     BtdrvBluetoothPropertyType_Address      =    2,    ///< \ref BtdrvAddress
     BtdrvBluetoothPropertyType_Unknown3     =    3,    ///< Only available with \ref btdrvSetAdapterProperty. Unknown, \ref BtdrvAddress.
-    BtdrvBluetoothPropertyType_Unknown5     =    5,    ///< Unknown. 3-bytes.
+    BtdrvBluetoothPropertyType_DeviceClass  =    5,    ///< Class of device.
     BtdrvBluetoothPropertyType_Unknown6     =    6,    ///< Unknown. 1-byte. The default is value 0x68.
 } BtdrvBluetoothPropertyType;
 
@@ -26,14 +26,42 @@ typedef enum {
     BtdrvBluetoothHhReportType_Feature      =    3,    ///< Feature
 } BtdrvBluetoothHhReportType;
 
+/// EventType
+typedef enum {
+    BtdrvEventType_DeviceFound              =    3,
+    BtdrvEventType_DiscoveryStateChanged    =    4,
+    BtdrvEventType_PinRequest               =    5,
+    BtdrvEventType_SspRequest               =    6,
+    BtdrvEventType_BondStateChanged         =    7,
+    BtdrvEventType_Unknown13                =   13,
+} BtdrvEventType;
+
 /// HidEventType
 typedef enum {
-    BtdrvHidEventType_Unknown0              =    0,    ///< Unknown. Only used with \ref btdrvGetHidEventInfo.
-    BtdrvHidEventType_Unknown4              =    4,    ///< Unknown.
+    BtdrvHidEventType_ConnectionState       =    0,    ///< Unknown. Only used with \ref btdrvGetHidEventInfo.
+    BtdrvHidEventType_GetReport             =    4,    ///< Unknown.
     BtdrvHidEventType_Unknown7              =    7,    ///< Unknown. Only used with \ref btdrvGetHidEventInfo.
     BtdrvHidEventType_Unknown8              =    8,    ///< Unknown.
     BtdrvHidEventType_Unknown9              =    9,    ///< Unknown.
 } BtdrvHidEventType;
+
+/// BleEventType
+typedef enum {
+    BtdrvBleEventType_Unknown0              =    0,    ///< Unknown.
+    BtdrvBleEventType_Unknown1              =    1,    ///< Unknown.
+    BtdrvBleEventType_Unknown2              =    2,    ///< Unknown.
+    BtdrvBleEventType_Unknown3              =    3,    ///< Unknown.
+    BtdrvBleEventType_Unknown4              =    4,    ///< Unknown.
+    BtdrvBleEventType_Unknown5              =    5,    ///< Unknown.
+    BtdrvBleEventType_Unknown6              =    6,    ///< Unknown.
+    BtdrvBleEventType_Unknown7              =    7,    ///< Unknown.
+    BtdrvBleEventType_Unknown8              =    8,    ///< Unknown.
+    BtdrvBleEventType_Unknown9              =    9,    ///< Unknown.
+    BtdrvBleEventType_Unknown10             =   10,    ///< Unknown.
+    BtdrvBleEventType_Unknown11             =   11,    ///< Unknown.
+    BtdrvBleEventType_Unknown12             =   12,    ///< Unknown.
+    BtdrvBleEventType_Unknown13             =   13,    ///< Unknown.
+} BtdrvBleEventType;
 
 /// This determines the u16 data to write into the CircularBuffer (name "BLE CORE").
 typedef enum {
@@ -50,7 +78,7 @@ typedef struct {
 /// AdapterProperty
 typedef struct {
     BtdrvAddress addr;         ///< Same as the data for ::BtdrvBluetoothPropertyType_Address.
-    u8 type5[0x3];             ///< Same as the data for ::BtdrvBluetoothPropertyType_Unknown5.
+    u8 cod[0x3];               ///< Same as the data for ::BtdrvBluetoothPropertyType_DeviceClass.
     char name[0xF9];           ///< Same as the data for ::BtdrvBluetoothPropertyType_Name (last byte is not initialized).
     u8 type6;                  ///< Set to hard-coded value 0x68 (same as the data for ::BtdrvBluetoothPropertyType_Unknown6).
 } BtdrvAdapterProperty;

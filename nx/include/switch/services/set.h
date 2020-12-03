@@ -301,14 +301,13 @@ typedef struct {
 typedef struct {
     BtdrvAddress address;
     char name[0x20];
-    u16 unk_x26;
-    u8 unk_x28;
-    Uuid uuid;
-    u8 unk_x39;
+    u8 device_class[0x3];
+    u8 link_key[0x10];
+    bool link_key_present;
     u16 unk_x3A;
     u32 unk_x3C;
-    u16 unk_x40;
-    u16 unk_x42;
+    u16 vid;
+    u16 pid;
     u16 unk_x44;
     u8 unk_x46[0x80];
     u16 unk_xC6;

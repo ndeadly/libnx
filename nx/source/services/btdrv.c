@@ -213,29 +213,29 @@ Result btdrvCancelBond(BtdrvAddress addr) {
     return _btdrvCmdInAddrNoOut(addr, 12);
 }
 
-Result btdrvRespondToPinRequest(BtdrvAddress addr, bool flag, const BtdrvBluetoothPinCode *pin_code, u8 unk) {
+Result btdrvRespondToPinRequest(BtdrvAddress addr, bool accept, const BtdrvBluetoothPinCode *pin_code, u8 length) {
     const struct {
         BtdrvAddress addr;
-        u8 flag;
-        u8 unk;
+        u8 accept;
+        u8 length;
         BtdrvBluetoothPinCode pin_code;
-    } in = { addr, flag!=0, unk, *pin_code };
+    } in = { addr, accept!=0, length, *pin_code };
 
     return serviceDispatchIn(&g_btdrvSrv, 13, in);
 }
 
-Result btdrvRespondToSspRequest(BtdrvAddress addr, u8 variant, bool flag, u32 unk) {
+Result btdrvRespondToSspRequest(BtdrvAddress addr, u8 variant, bool accept, u32 passkey) {
     const struct {
         BtdrvAddress addr;
         u8 variant;
-        u8 flag;
-        u32 unk;
-    } in = { addr, variant, flag!=0, unk };
+        u8 accept;
+        u32 passkey;
+    } in = { addr, variant, accept!=0, passkey };
 
     return serviceDispatchIn(&g_btdrvSrv, 14, in);
 }
 
-Result btdrvGetEventInfo(void* buffer, size_t size, u32 *type) {
+Result btdrvGetEventInfo(void* buffer, size_t size, BtdrvEventType *type) {
     return _btdrvCmdOutU32OutBuf(buffer, size, type, 15);
 }
 
@@ -367,8 +367,8 @@ Result btdrvEnableRadio(bool flag) {
     return _btdrvCmdInBoolNoOut(flag, 34);
 }
 
-Result btdrvSetVisibility(bool flag0, bool flag1) {
-    return _btdrvCmdTwoInBoolsNoOut(flag0, flag1, 35);
+Result btdrvSetVisibility(bool discoverable, bool connectable) {
+    return _btdrvCmdTwoInBoolsNoOut(discoverable, connectable, 35);
 }
 
 Result btdrvEnableTbfcScan(bool flag) {
@@ -416,13 +416,13 @@ Result btdrvGetHidReportEventInfo(void* buffer, size_t size, BtdrvHidEventType *
         if (g_btdrvCircularBuffer==NULL) return MAKERESULT(Module_Libnx, LibnxError_NotInitialized);
         for (; (data_ptr = btdrvCircularBufferRead(g_btdrvCircularBuffer)); btdrvCircularBufferFree(g_btdrvCircularBuffer)) {
             *type = data_ptr->hdr.type;
-            if (*type == BtdrvHidEventType_Unknown4) {
+            if (*type == BtdrvHidEventType_GetReport) {
                 if (armTicksToNs(armGetSystemTick() - data_ptr->hdr.tick) >= 100000001) continue;
             }
             break;
         }
         if (data_ptr == NULL) {
-            *type = BtdrvHidEventType_Unknown4;
+            *type = BtdrvHidEventType_GetReport;
             return 0;
         }
         if (*type == BtdrvHidEventType_Unknown9) {
@@ -430,7 +430,7 @@ Result btdrvGetHidReportEventInfo(void* buffer, size_t size, BtdrvHidEventType *
             else memcpy(info->type9.hid_report.rawdata, data_ptr->data.type9.hid_report.rawdata, sizeof(info->type9.hid_report.rawdata));
         }
         else if (*type == BtdrvHidEventType_Unknown8) memcpy(info->type8.data, data_ptr->data.type8.data, sizeof(info->type8.data));
-        else if (*type == BtdrvHidEventType_Unknown4) {
+        else if (*type == BtdrvHidEventType_GetReport) {
             u16 tmpsize = hosversionBefore(9,0,0) ? data_ptr->data.type4.v1.size : data_ptr->data.type4.v9.size;
             if (size < 0xE) return MAKERESULT(Module_Libnx, LibnxError_BadInput);
             if (tmpsize > size-0xE) tmpsize = size-0xE;
@@ -541,11 +541,11 @@ Result btdrvFinalizeBle(void) {
     return _btdrvCmdNoIO(49);
 }
 
-Result btdrvSetBleVisibility(bool flag0, bool flag1) {
+Result btdrvSetBleVisibility(bool discoverable, bool connectable) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return _btdrvCmdTwoInBoolsNoOut(flag0, flag1, 50);
+    return _btdrvCmdTwoInBoolsNoOut(discoverable, connectable, 50);
 }
 
 Result btdrvSetLeConnectionParameter(const BtdrvLeConnectionParams *param) {
@@ -590,15 +590,15 @@ Result btdrvSetBleAdvertiseData(const BtdrvBleAdvertisePacketData *data) {
     return _btdrvCmdInBufPtrFixed(data, sizeof(*data), 53);
 }
 
-Result btdrvSetBleAdvertiseParameter(BtdrvAddress addr, u16 unk0, u16 unk1) {
+Result btdrvSetBleAdvertiseParameter(BtdrvAddress addr, u16 min_interval, u16 max_interval) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
     const struct {
         BtdrvAddress addr;
-        u16 unk0;
-        u16 unk1;
-    } in = { addr, unk0, unk1 };
+        u16 min_interval;
+        u16 max_interval;
+    } in = { addr, min_interval, max_interval };
 
     return serviceDispatchIn(&g_btdrvSrv, 54, in);
 }
@@ -700,15 +700,15 @@ Result btdrvCancelConnectGattServer(u8 unk, BtdrvAddress addr, bool flag) {
     return serviceDispatchIn(&g_btdrvSrv, 66, in);
 }
 
-Result btdrvDisconnectGattServer(u32 unk) {
+Result btdrvDisconnectGattServer(u32 connection_handle) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 66 : 67;
 
-    return _btdrvCmdInU32NoOut(unk, cmd_id);
+    return _btdrvCmdInU32NoOut(connection_handle, cmd_id);
 }
 
-Result btdrvGetGattAttribute(BtdrvAddress addr, u32 unk) {
+Result btdrvGetGattAttribute(BtdrvAddress addr, u32 connection_handle) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 67 : 68;
@@ -716,28 +716,28 @@ Result btdrvGetGattAttribute(BtdrvAddress addr, u32 unk) {
     if (hosversionBefore(9,0,0)) {
         const struct {
             BtdrvAddress addr;
-            u32 unk0;
-        } in = { addr, unk };
+            u32 connection_handle;
+        } in = { addr, connection_handle };
 
         return serviceDispatchIn(&g_btdrvSrv, cmd_id, in);
     }
-    return _btdrvCmdInU32NoOut(unk, cmd_id);
+    return _btdrvCmdInU32NoOut(connection_handle, cmd_id);
 }
 
-Result btdrvGetGattService(u32 unk, const BtdrvGattAttributeUuid *uuid) {
+Result btdrvGetGattService(u32 connection_handle, const BtdrvGattAttributeUuid *uuid) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 68 : 69;
 
     const struct {
-        u32 unk0;
+        u32 connection_handle;
         BtdrvGattAttributeUuid uuid;
-    } in = { unk, *uuid };
+    } in = { connection_handle, *uuid };
 
     return serviceDispatchIn(&g_btdrvSrv, cmd_id, in);
 }
 
-Result btdrvConfigureAttMtu(u32 unk, u16 mtu) {
+Result btdrvConfigureAttMtu(u32 connection_handle, u16 mtu) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 69 : 70;
@@ -745,8 +745,8 @@ Result btdrvConfigureAttMtu(u32 unk, u16 mtu) {
     const struct {
         u16 mtu;
         u16 pad;
-        u32 unk;
-    } in = { mtu, 0, unk };
+        u32 connection_handle;
+    } in = { mtu, 0, connection_handle };
 
     return serviceDispatchIn(&g_btdrvSrv, cmd_id, in);
 }
@@ -759,105 +759,105 @@ Result btdrvRegisterGattServer(const BtdrvGattAttributeUuid *uuid) {
     return _btdrvCmdInUuidNoOut(uuid, cmd_id);
 }
 
-Result btdrvUnregisterGattServer(u8 unk) {
+Result btdrvUnregisterGattServer(u8 interface) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 71 : 72;
 
-    return _btdrvCmdInU8NoOut(unk, cmd_id);
+    return _btdrvCmdInU8NoOut(interface, cmd_id);
 }
 
-Result btdrvConnectGattClient(u8 unk, BtdrvAddress addr, bool flag) {
+Result btdrvConnectGattClient(u8 interface, BtdrvAddress addr, bool is_direct) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 72 : 73;
 
     const struct {
-        u8 unk;
+        u8 interface;
         BtdrvAddress addr;
-        u8 flag;
-    } in = { unk, addr, flag!=0 };
+        u8 is_direct;
+    } in = { interface, addr, is_direct!=0 };
 
     return serviceDispatchIn(&g_btdrvSrv, cmd_id, in);
 }
 
-Result btdrvDisconnectGattClient(u8 unk, BtdrvAddress addr) {
+Result btdrvDisconnectGattClient(u8 interface, BtdrvAddress addr) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 73 : 74;
 
     if (hosversionBefore(9,0,0)) {
         const struct {
-            u8 unk0;
+            u8 interface;
             BtdrvAddress addr;
-        } in = { unk, addr };
+        } in = { interface, addr };
 
         return serviceDispatchIn(&g_btdrvSrv, cmd_id, in);
     }
-    return serviceDispatchIn(&g_btdrvSrv, cmd_id, unk);
+    return serviceDispatchIn(&g_btdrvSrv, cmd_id, interface);
 }
 
-Result btdrvAddGattService(u8 unk0, const BtdrvGattAttributeUuid *uuid, u8 unk1, bool flag) {
+Result btdrvAddGattService(u8 interface, const BtdrvGattAttributeUuid *service_uuid, u8 handle, bool primary_service) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
     const struct {
-        u8 unk0;
-        u8 unk1;
-        u8 flag;
+        u8 interface;
+        u8 handle;
+        u8 primary_service;
         u8 pad;
-        BtdrvGattAttributeUuid uuid;
-    } in = { unk0, unk1, flag!=0, 0, *uuid };
+        BtdrvGattAttributeUuid service_uuid;
+    } in = { interface, handle, primary_service!=0, 0, *service_uuid };
 
     return serviceDispatchIn(&g_btdrvSrv, 75, in);
 }
 
-Result btdrvEnableGattService(u8 unk, const BtdrvGattAttributeUuid *uuid) {
+Result btdrvEnableGattService(u8 interface, const BtdrvGattAttributeUuid *service_uuid) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 74 : 76;
 
     const struct {
-        u8 unk;
+        u8 interface;
         u8 pad[3];
-        BtdrvGattAttributeUuid uuid;
-    } in = { unk, {0}, *uuid };
+        BtdrvGattAttributeUuid service_uuid;
+    } in = { interface, {0}, *service_uuid };
 
     return serviceDispatchIn(&g_btdrvSrv, cmd_id, in);
 }
 
-Result btdrvAddGattCharacteristic(u8 unk0, const BtdrvGattAttributeUuid *uuid0, const BtdrvGattAttributeUuid *uuid1, u8 unk1, u16 unk2) {
+Result btdrvAddGattCharacteristic(u8 interface, const BtdrvGattAttributeUuid *service_uuid, const BtdrvGattAttributeUuid *characteristic_uuid, u8 properties, u16 permissions) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
     const struct {
-        u8 unk0;
-        u8 unk1;
-        u16 unk2;
-        BtdrvGattAttributeUuid uuid0;
-        BtdrvGattAttributeUuid uuid1;
-    } in = { unk0, unk1, unk2, *uuid0, *uuid1 };
+        u8 interface;
+        u8 properties;
+        u16 permissions;
+        BtdrvGattAttributeUuid service_uuid;
+        BtdrvGattAttributeUuid characteristic_uuid;
+    } in = { interface, properties, permissions, *service_uuid, *characteristic_uuid };
 
     return serviceDispatchIn(&g_btdrvSrv, 77, in);
 }
 
-Result btdrvAddGattDescriptor(u8 unk0, const BtdrvGattAttributeUuid *uuid0, const BtdrvGattAttributeUuid *uuid1, u16 unk1) {
+Result btdrvAddGattDescriptor(u8 interface, const BtdrvGattAttributeUuid *service_uuid, const BtdrvGattAttributeUuid *characteristic_uuid, u16 permissions) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 76 : 78;
 
     const struct {
-        u8 unk0;
+        u8 interface;
         u8 pad;
-        u16 unk1;
-        BtdrvGattAttributeUuid uuid0;
-        BtdrvGattAttributeUuid uuid1;
-    } in = { unk0, 0, unk1, *uuid0, *uuid1 };
+        u16 permissions;
+        BtdrvGattAttributeUuid service_uuid;
+        BtdrvGattAttributeUuid characteristic_uuid;
+    } in = { interface, 0, permissions, *service_uuid, *characteristic_uuid };
 
     return serviceDispatchIn(&g_btdrvSrv, cmd_id, in);
 }
 
-Result btdrvGetBleManagedEventInfo(void* buffer, size_t size, u32 *type) {
+Result btdrvGetBleManagedEventInfo(void* buffer, size_t size, BtdrvBleEventType *type) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 78 : 79;
@@ -865,92 +865,92 @@ Result btdrvGetBleManagedEventInfo(void* buffer, size_t size, u32 *type) {
     return _btdrvCmdOutU32OutBuf(buffer, size, type, cmd_id);
 }
 
-Result btdrvGetGattFirstCharacteristic(u32 unk, const BtdrvGattId *id, bool flag, const BtdrvGattAttributeUuid *uuid, u8 *unk_out, BtdrvGattId *id_out) {
+Result btdrvGetGattFirstCharacteristic(u32 connection_handle, const BtdrvGattId *service_id, bool primary_service, const BtdrvGattAttributeUuid *uuid, u8 *property_out, BtdrvGattId *id_out) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 79 : 80;
 
     const struct {
-        u8 flag;
+        u8 primary_service;
         u8 pad[3];
-        u32 unk;
-        BtdrvGattId id;
+        u32 connection_handle;
+        BtdrvGattId service_id;
         BtdrvGattAttributeUuid uuid;
-    } in = { flag!=0, {0}, unk, *id, *uuid };
+    } in = { primary_service!=0, {0}, connection_handle, *service_id, *uuid };
 
     struct {
-        u8 unk;
+        u8 property;
         u8 pad[3];
         BtdrvGattId id;
     } out;
 
     Result rc = serviceDispatchInOut(&g_btdrvSrv, cmd_id, in, out);
     if (R_SUCCEEDED(rc)) {
-        if (unk_out) *unk_out = out.unk;
+        if (property_out) *property_out = out.property;
         if (id_out) *id_out = out.id;
     }
     return rc;
 }
 
-Result btdrvGetGattNextCharacteristic(u32 unk, const BtdrvGattId *id0, bool flag, const BtdrvGattId *id1, const BtdrvGattAttributeUuid *uuid, u8 *unk_out, BtdrvGattId *id_out) {
+Result btdrvGetGattNextCharacteristic(u32 connection_handle, const BtdrvGattId *service_id, bool primary_service, const BtdrvGattId *characteristic_id, const BtdrvGattAttributeUuid *uuid, u8 *property_out, BtdrvGattId *id_out) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 80 : 81;
 
     const struct {
-        u8 flag;
+        u8 primary_service;
         u8 pad[3];
-        u32 unk;
-        BtdrvGattId id0;
-        BtdrvGattId id1;
+        u32 connection_handle;
+        BtdrvGattId service_id;
+        BtdrvGattId characteristic_id;
         BtdrvGattAttributeUuid uuid;
-    } in = { flag!=0, {0}, unk, *id0, *id1, *uuid };
+    } in = { primary_service!=0, {0}, connection_handle, *service_id, *characteristic_id, *uuid };
 
     struct {
-        u8 unk;
+        u8 property;
         u8 pad[3];
         BtdrvGattId id;
     } out;
 
     Result rc = serviceDispatchInOut(&g_btdrvSrv, cmd_id, in, out);
     if (R_SUCCEEDED(rc)) {
-        if (unk_out) *unk_out = out.unk;
+        if (property_out) *property_out = out.property;
         if (id_out) *id_out = out.id;
     }
     return rc;
 }
 
-Result btdrvGetGattFirstDescriptor(u32 unk, const BtdrvGattId *id0, bool flag, const BtdrvGattId *id1, const BtdrvGattAttributeUuid *uuid, BtdrvGattId *id_out) {
+Result btdrvGetGattFirstDescriptor(u32 connection_handle, const BtdrvGattId *service_id, bool primary_service, const BtdrvGattId *characteristic_id, const BtdrvGattAttributeUuid *uuid, BtdrvGattId *id_out) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 81 : 82;
 
     const struct {
-        u8 flag;
+        u8 primary_service;
         u8 pad[3];
-        u32 unk;
-        BtdrvGattId id0;
-        BtdrvGattId id1;
+        u32 connection_handle;
+        BtdrvGattId service_id;
+        BtdrvGattId characteristic_id;
         BtdrvGattAttributeUuid uuid;
-    } in = { flag!=0, {0}, unk, *id0, *id1, *uuid };
+    } in = { primary_service!=0, {0}, connection_handle, *service_id, *characteristic_id, *uuid };
 
     return serviceDispatchInOut(&g_btdrvSrv, cmd_id, in, *id_out);
 }
 
-Result btdrvGetGattNextDescriptor(u32 unk, const BtdrvGattId *id0, bool flag, const BtdrvGattId *id1, const BtdrvGattId *id2, const BtdrvGattAttributeUuid *uuid, BtdrvGattId *id_out) {
+Result btdrvGetGattNextDescriptor(u32 connection_handle, const BtdrvGattId *service_id, bool primary_service, const BtdrvGattId *characteristic_id, const BtdrvGattId *descriptor_id, const BtdrvGattAttributeUuid *uuid, BtdrvGattId *id_out) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 82 : 83;
 
     const struct {
-        u8 flag;
+        u8 primary_service;
         u8 pad[3];
-        u32 unk;
-        BtdrvGattId id0;
-        BtdrvGattId id1;
-        BtdrvGattId id2;
+        u32 connection_handle;
+        BtdrvGattId service_id;
+        BtdrvGattId characteristic_id;
+        BtdrvGattId descriptor_id;
         BtdrvGattAttributeUuid uuid;
-    } in = { flag!=0, {0}, unk, *id0, *id1, *id2, *uuid };
+    } in = { primary_service!=0, {0}, connection_handle, *service_id, *characteristic_id, *descriptor_id, *uuid };
 
     return serviceDispatchInOut(&g_btdrvSrv, cmd_id, in, *id_out);
 }
@@ -998,55 +998,55 @@ Result btdrvUnregisterGattDataPath(const BtdrvGattAttributeUuid *uuid) {
     return _btdrvCmdInUuidNoOut(uuid, cmd_id);
 }
 
-Result btdrvReadGattCharacteristic(u32 connection_handle, bool primary_service, const BtdrvGattId *id0, const BtdrvGattId *id1, u8 unk) {
+Result btdrvReadGattCharacteristic(u32 connection_handle, bool primary_service, const BtdrvGattId *service_id, const BtdrvGattId *characteristic_id, u8 auth_type) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 89 : 90;
 
     const struct {
         u8 primary_service;
-        u8 unk;
+        u8 auth_type;
         u8 pad[2];
         u32 connection_handle;
-        BtdrvGattId id0;
-        BtdrvGattId id1;
-    } in = { primary_service!=0, unk, {0}, connection_handle, *id0, *id1};
+        BtdrvGattId service_id;
+        BtdrvGattId characteristic_id;
+    } in = { primary_service!=0, auth_type, {0}, connection_handle, *service_id, *characteristic_id};
 
     return serviceDispatchIn(&g_btdrvSrv, cmd_id, in);
 }
 
-Result btdrvReadGattDescriptor(u32 connection_handle, bool primary_service, const BtdrvGattId *id0, const BtdrvGattId *id1, const BtdrvGattId *id2, u8 unk) {
+Result btdrvReadGattDescriptor(u32 connection_handle, bool primary_service, const BtdrvGattId *service_id, const BtdrvGattId *characteristic_id, const BtdrvGattId *descriptor_id, u8 auth_type) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 90 : 91;
 
     const struct {
         u8 primary_service;
-        u8 unk;
+        u8 auth_type;
         u8 pad[2];
         u32 connection_handle;
-        BtdrvGattId id0;
-        BtdrvGattId id1;
-        BtdrvGattId id2;
-    } in = { primary_service!=0, unk, {0}, connection_handle, *id0, *id1, *id2 };
+        BtdrvGattId service_id;
+        BtdrvGattId characteristic_id;
+        BtdrvGattId descriptor_id;
+    } in = { primary_service!=0, auth_type, {0}, connection_handle, *service_id, *characteristic_id, *descriptor_id };
 
     return serviceDispatchIn(&g_btdrvSrv, cmd_id, in);
 }
 
-Result btdrvWriteGattCharacteristic(u32 connection_handle, bool primary_service, const BtdrvGattId *id0, const BtdrvGattId *id1, const void* buffer, size_t size, u8 unk, bool flag) {
+Result btdrvWriteGattCharacteristic(u32 connection_handle, bool primary_service, const BtdrvGattId *service_id, const BtdrvGattId *characteristic_id, const void* buffer, size_t size, u8 auth_type, bool flag) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 91 : 92;
 
     const struct {
         u8 primary_service;
-        u8 unk;
+        u8 auth_type;
         u8 flag;
         u8 pad;
         u32 connection_handle;
-        BtdrvGattId id0;
-        BtdrvGattId id1;
-    } in = { primary_service!=0, unk, flag!=0, 0, connection_handle, *id0, *id1 };
+        BtdrvGattId service_id;
+        BtdrvGattId characteristic_id;
+    } in = { primary_service!=0, auth_type, flag!=0, 0, connection_handle, *service_id, *characteristic_id };
 
     return serviceDispatchIn(&g_btdrvSrv, cmd_id, in,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
@@ -1054,20 +1054,20 @@ Result btdrvWriteGattCharacteristic(u32 connection_handle, bool primary_service,
     );
 }
 
-Result btdrvWriteGattDescriptor(u32 connection_handle, bool primary_service, const BtdrvGattId *id0, const BtdrvGattId *id1, const BtdrvGattId *id2, const void* buffer, size_t size, u8 unk) {
+Result btdrvWriteGattDescriptor(u32 connection_handle, bool primary_service, const BtdrvGattId *service_id, const BtdrvGattId *characteristic_id, const BtdrvGattId *descriptor_id, const void* buffer, size_t size, u8 auth_type) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 92 : 93;
 
     const struct {
         u8 primary_service;
-        u8 unk;
+        u8 auth_type;
         u8 pad[2];
         u32 connection_handle;
-        BtdrvGattId id0;
-        BtdrvGattId id1;
-        BtdrvGattId id2;
-    } in = { primary_service!=0, unk, {0}, connection_handle, *id0, *id1, *id2 };
+        BtdrvGattId service_id;
+        BtdrvGattId characteristic_id;
+        BtdrvGattId descriptor_id;
+    } in = { primary_service!=0, auth_type, {0}, connection_handle, *service_id, *characteristic_id, *descriptor_id };
 
     return serviceDispatchIn(&g_btdrvSrv, cmd_id, in,
         .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
@@ -1075,22 +1075,22 @@ Result btdrvWriteGattDescriptor(u32 connection_handle, bool primary_service, con
     );
 }
 
-Result btdrvRegisterGattNotification(u32 connection_handle, bool primary_service, const BtdrvGattId *id0, const BtdrvGattId *id1) {
+Result btdrvRegisterGattNotification(u32 connection_handle, bool primary_service, const BtdrvGattId *service_id, const BtdrvGattId *characteristic_id) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return _btdrvGattNotification(connection_handle, primary_service, id0, id1, 94);
+    return _btdrvGattNotification(connection_handle, primary_service, service_id, characteristic_id, 94);
 }
 
-Result btdrvUnregisterGattNotification(u32 connection_handle, bool primary_service, const BtdrvGattId *id0, const BtdrvGattId *id1) {
+Result btdrvUnregisterGattNotification(u32 connection_handle, bool primary_service, const BtdrvGattId *service_id, const BtdrvGattId *characteristic_id) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 93 : 95;
 
-    return _btdrvGattNotification(connection_handle, primary_service, id0, id1, cmd_id);
+    return _btdrvGattNotification(connection_handle, primary_service, service_id, characteristic_id, cmd_id);
 }
 
-Result btdrvGetLeHidEventInfo(void* buffer, size_t size, u32 *type) {
+Result btdrvGetLeHidEventInfo(void* buffer, size_t size, BtdrvBleEventType *type) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(5,1,0) ? 95 : 96;
@@ -1106,14 +1106,14 @@ Result btdrvRegisterBleHidEvent(Event* out_event) {
     return _btdrvCmdGetEvent(out_event, true, cmd_id);
 }
 
-Result btdrvSetBleScanParameter(u16 unk0, u16 unk1) {
+Result btdrvSetBleScanParameter(u16 interval, u16 window) {
     if (hosversionBefore(5,1,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
     const struct {
-        u16 unk0;
-        u16 unk1;
-    } in = { unk0, unk1 };
+        u16 interval;
+        u16 window;
+    } in = { interval, window };
 
     return serviceDispatchIn(&g_btdrvSrv, 98, in);
 }
