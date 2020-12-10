@@ -340,8 +340,8 @@ Result btdrvSetTsi(BtdrvAddress addr, u8 unk) {
     return _btmCmdInAddrU8NoOut(addr, unk, 28);
 }
 
-Result btdrvEnableBurstMode(BtdrvAddress addr, bool flag) {
-    return _btmCmdInAddrU8NoOut(addr, flag!=0, 29);
+Result btdrvEnableBurstMode(BtdrvAddress addr, bool enable) {
+    return _btmCmdInAddrU8NoOut(addr, enable!=0, 29);
 }
 
 Result btdrvSetZeroRetransmission(BtdrvAddress addr, u8 *buf, u8 count) {
@@ -351,8 +351,8 @@ Result btdrvSetZeroRetransmission(BtdrvAddress addr, u8 *buf, u8 count) {
     );
 }
 
-Result btdrvEnableMcMode(bool flag) {
-    return _btdrvCmdInBoolNoOut(flag, 31);
+Result btdrvEnableMcMode(bool enable) {
+    return _btdrvCmdInBoolNoOut(enable, 31);
 }
 
 Result btdrvEnableLlrScan(void) {
@@ -363,19 +363,19 @@ Result btdrvDisableLlrScan(void) {
     return _btdrvCmdNoIO(33);
 }
 
-Result btdrvEnableRadio(bool flag) {
-    return _btdrvCmdInBoolNoOut(flag, 34);
+Result btdrvEnableRadio(bool enable) {
+    return _btdrvCmdInBoolNoOut(enable, 34);
 }
 
 Result btdrvSetVisibility(bool discoverable, bool connectable) {
     return _btdrvCmdTwoInBoolsNoOut(discoverable, connectable, 35);
 }
 
-Result btdrvEnableTbfcScan(bool flag) {
+Result btdrvEnableTbfcScan(bool enable) {
     if (hosversionBefore(4,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return _btdrvCmdInBoolNoOut(flag, 36);
+    return _btdrvCmdInBoolNoOut(enable, 36);
 }
 
 Result btdrvRegisterHidReportEvent(Event* out_event) {
@@ -431,16 +431,16 @@ Result btdrvGetHidReportEventInfo(void* buffer, size_t size, BtdrvHidEventType *
         }
         else if (*type == BtdrvHidEventType_Unknown8) memcpy(info->type8.data, data_ptr->data.type8.data, sizeof(info->type8.data));
         else if (*type == BtdrvHidEventType_GetReport) {
-            u16 tmpsize = hosversionBefore(9,0,0) ? data_ptr->data.type4.v1.size : data_ptr->data.type4.v9.size;
+            u16 tmpsize = hosversionBefore(9,0,0) ? data_ptr->data.get_report.v1.size : data_ptr->data.get_report.v9.size;
             if (size < 0xE) return MAKERESULT(Module_Libnx, LibnxError_BadInput);
             if (tmpsize > size-0xE) tmpsize = size-0xE;
-            info->type4.unk_x0 = 0;
-            info->type4.size = tmpsize;
-            if (hosversionBefore(9,0,0)) memcpy(info->type4.data, data_ptr->data.type4.v1.data, tmpsize);
-            else memcpy(info->type4.data, data_ptr->data.type4.v9.data, tmpsize);
+            info->get_report.unk_x0 = 0;
+            info->get_report.size = tmpsize;
+            if (hosversionBefore(9,0,0)) memcpy(info->get_report.data, data_ptr->data.get_report.v1.data, tmpsize);
+            else memcpy(info->get_report.data, data_ptr->data.get_report.v9.data, tmpsize);
 
-            if (hosversionBefore(9,0,0)) memcpy(&info->type4.addr, &data_ptr->data.type4.v1.addr, sizeof(BtdrvAddress));
-            else memcpy(&info->type4.addr, &data_ptr->data.type4.v9.addr, sizeof(BtdrvAddress));
+            if (hosversionBefore(9,0,0)) memcpy(&info->get_report.addr, &data_ptr->data.get_report.v1.addr, sizeof(BtdrvAddress));
+            else memcpy(&info->get_report.addr, &data_ptr->data.get_report.v9.addr, sizeof(BtdrvAddress));
         }
         else return MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen); // sdknso would Abort here.
         btdrvCircularBufferFree(g_btdrvCircularBuffer);
@@ -481,12 +481,12 @@ Result btdrvGetChannelMap(BtdrvChannelMapList *out) {
     return _btdrvCmdOutBufAliasFixed(out, sizeof(*out), cmd_id);
 }
 
-Result btdrvEnableTxPowerBoostSetting(bool flag) {
+Result btdrvEnableTxPowerBoostSetting(bool enable) {
     if (hosversionBefore(3,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(4,0,0) ? 41 : 42;
 
-    return _btdrvCmdInBoolNoOut(flag, cmd_id);
+    return _btdrvCmdInBoolNoOut(enable, cmd_id);
 }
 
 Result btdrvIsTxPowerBoostSettingEnabled(bool *out) {
@@ -497,12 +497,12 @@ Result btdrvIsTxPowerBoostSettingEnabled(bool *out) {
     return _btdrvCmdNoInOutBool(out, cmd_id);
 }
 
-Result btdrvEnableAfhSetting(bool flag) {
+Result btdrvEnableAfhSetting(bool enable) {
     if (hosversionBefore(3,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
     u32 cmd_id = hosversionBefore(4,0,0) ? 43 : 44;
 
-    return _btdrvCmdInBoolNoOut(flag, cmd_id);
+    return _btdrvCmdInBoolNoOut(enable, cmd_id);
 }
 
 Result btdrvIsAfhSettingEnabled(bool *out) {
@@ -631,11 +631,11 @@ Result btdrvDeleteBleScanFilterCondition(const BtdrvBleAdvertiseFilter *filter) 
     return _btdrvCmdInBufPtrFixed(filter, sizeof(*filter), 58);
 }
 
-Result btdrvDeleteBleScanFilter(u8 unk) {
+Result btdrvDeleteBleScanFilter(u8 index) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return _btdrvCmdInU8NoOut(unk, 59);
+    return _btdrvCmdInU8NoOut(index, 59);
 }
 
 Result btdrvClearBleScanFilters(void) {
@@ -645,11 +645,11 @@ Result btdrvClearBleScanFilters(void) {
     return _btdrvCmdNoIO(60);
 }
 
-Result btdrvEnableBleScanFilter(bool flag) {
+Result btdrvEnableBleScanFilter(bool enable) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return _btdrvCmdInBoolNoOut(flag, 61);
+    return _btdrvCmdInBoolNoOut(enable, 61);
 }
 
 Result btdrvRegisterGattClient(const BtdrvGattAttributeUuid *uuid) {
@@ -659,11 +659,11 @@ Result btdrvRegisterGattClient(const BtdrvGattAttributeUuid *uuid) {
     return _btdrvCmdInUuidNoOut(uuid, 62);
 }
 
-Result btdrvUnregisterGattClient(u8 unk) {
+Result btdrvUnregisterGattClient(u8 interface) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
-    return _btdrvCmdInU8NoOut(unk, 63);
+    return _btdrvCmdInU8NoOut(interface, 63);
 }
 
 Result btdrvUnregisterAllGattClients(void) {
@@ -673,29 +673,29 @@ Result btdrvUnregisterAllGattClients(void) {
     return _btdrvCmdNoIO(64);
 }
 
-Result btdrvConnectGattServer(u8 unk, BtdrvAddress addr, bool flag, u64 AppletResourceUserId) {
+Result btdrvConnectGattServer(u8 interface, BtdrvAddress addr, bool is_direct, u64 AppletResourceUserId) {
     if (hosversionBefore(5,0,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
     const struct {
-        u8 unk;
+        u8 interface;
         BtdrvAddress addr;
-        u8 flag;
+        u8 is_direct;
         u64 AppletResourceUserId;
-    } in = { unk, addr, flag!=0, AppletResourceUserId };
+    } in = { interface, addr, is_direct!=0, AppletResourceUserId };
 
     return serviceDispatchIn(&g_btdrvSrv, 65, in);
 }
 
-Result btdrvCancelConnectGattServer(u8 unk, BtdrvAddress addr, bool flag) {
+Result btdrvCancelConnectGattServer(u8 interface, BtdrvAddress addr, bool flag) {
     if (hosversionBefore(5,1,0))
         return MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer);
 
     const struct {
-        u8 unk;
+        u8 interface;
         BtdrvAddress addr;
         u8 flag;
-    } in = { unk, addr, flag!=0 };
+    } in = { interface, addr, flag!=0 };
 
     return serviceDispatchIn(&g_btdrvSrv, 66, in);
 }

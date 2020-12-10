@@ -26,6 +26,48 @@ typedef enum {
     BtdrvBluetoothHhReportType_Feature      =    3,    ///< Feature
 } BtdrvBluetoothHhReportType;
 
+/// BluetoothSspVariant
+typedef enum {
+    BtdrvBluetoothSspVariant_PasskeyConfirmation    =    0,
+    BtdrvBluetoothSspVariant_PasskeyEntry           =    1,
+    BtdrvBluetoothSspVariant_Consent                =    2,
+    BtdrvBluetoothSspVariant_PasskeyNotification    =    3,
+} BtdrvBluetoothSspVariant;
+
+/// BluetoothTransport
+typedef enum {
+    BtdrvBluetoothTransport_Auto            =    0,
+    BtdrvBluetoothTransport_BREDR           =    1,
+    BtdrvBluetoothTransport_LE              =    2,
+} BtdrvBluetoothTransport;
+
+/// BluetoothDiscoveryState
+typedef enum {
+    BtdrvBluetoothDiscoveryState_Stopped    =    0,
+    BtdrvBluetoothDiscoveryState_Started    =    1,
+} BtdrvBluetoothDiscoveryState;
+
+/// BluetoothBondState
+typedef enum {
+    BtdrvBluetoothBondState_None            =    0,
+    BtdrvBluetoothBondState_Bonding         =    1,
+    BtdrvBluetoothBondState_Bonded          =    2,
+} BtdrvBluetoothBondState;
+
+/// HidConnectionState
+typedef enum {
+    BtdrvHidConnectionState_Connected                   =    0,
+    BtdrvHidConnectionState_Connecting                  =    1,
+    BtdrvHidConnectionState_Disconnected                =    2,
+    BtdrvHidConnectionState_Disconnecting               =    3,
+    BtdrvHidConnectionState_FailedMouseFromHost         =    4,
+    BtdrvHidConnectionState_FailedKeyboardFromHost      =    5,
+    BtdrvHidConnectionState_FailedTooManyDevices        =    6,
+    BtdrvHidConnectionState_FailedNoBluetoothHidDriver  =    7,
+    BtdrvHidConnectionState_FailedGeneric               =    8,
+    BtdrvHidConnectionState_Unknown                     =    9,
+} BtdrvHidConnectionState;
+
 /// EventType
 typedef enum {
     BtdrvEventType_DeviceFound              =    3,
@@ -63,6 +105,43 @@ typedef enum {
     BtdrvBleEventType_Unknown13             =   13,    ///< Unknown.
 } BtdrvBleEventType;
 
+/// Status
+typedef enum {
+    BtdrvStatus_Success                     =    0,
+    BtdrvStatus_Fail                        =    1,
+    BtdrvStatus_NotReady                    =    2,
+    BtdrvStatus_NoMemory                    =    3,
+    BtdrvStatus_Busy                        =    4,
+    BtdrvStatus_Done                        =    5,
+    BtdrvStatus_Unsupported                 =    6,
+    BtdrvStatus_ParameterInvalid            =    7,
+    BtdrvStatus_Unhandled                   =    8,
+    BtdrvStatus_AuthenticationFailure       =    9,
+    BtdrvStatus_RemoteDeviceDown            =   10,
+    BtdrvStatus_AuthenticationRejected      =   11,
+    BtdrvStatus_JniEnvironmentError         =   12,
+    BtdrvStatus_JniThreadAttachError        =   13,
+    BtdrvStatus_WakelockError               =   14,
+} BtdrvStatus;
+
+/// HidStatus
+typedef enum {
+    BtdrvHidStatus_Ok                           =    0,
+    BtdrvHidStatus_HandshakeHidNotReady         =    1,
+    BtdrvHidStatus_HandshakeInvalidReportId     =    2,
+    BtdrvHidStatus_HandshakeTransactionNotSpt   =    3,
+    BtdrvHidStatus_HandshakeInvalidParameter    =    4,
+    BtdrvHidStatus_HandshakeError               =    5,
+    BtdrvHidStatus_Error                        =    6,
+    BtdrvHidStatus_ErrorSdp                     =    7,
+    BtdrvHidStatus_ErrorProtocol                =    8,
+    BtdrvHidStatus_ErrorDatabaseFull            =    9,
+    BtdrvHidStatus_ErrorDeviceTypeUnsupported   =   10,
+    BtdrvHidStatus_ErrorNoResources             =   11,
+    BtdrvHidStatus_ErrorAuthenicationFailed     =   12,
+    BtdrvHidStatus_ErrorHdl                     =   13,
+} BtdrvHidStatus;
+
 /// This determines the u16 data to write into the CircularBuffer (name "BLE CORE").
 typedef enum {
     BtdrvFatalReason_Unknown1               =    1,    ///< u16 data = 0x850.
@@ -75,10 +154,15 @@ typedef struct {
     u8 address[0x6];           ///< Address
 } BtdrvAddress;
 
+/// DeviceClass
+typedef struct {
+    u8 cod[0x3];               ///< DeviceClass
+} BtdrvDeviceClass;
+
 /// AdapterProperty
 typedef struct {
     BtdrvAddress addr;         ///< Same as the data for ::BtdrvBluetoothPropertyType_Address.
-    u8 cod[0x3];               ///< Same as the data for ::BtdrvBluetoothPropertyType_DeviceClass.
+    BtdrvDeviceClass cod;      ///< Same as the data for ::BtdrvBluetoothPropertyType_DeviceClass.
     char name[0xF9];           ///< Same as the data for ::BtdrvBluetoothPropertyType_Name (last byte is not initialized).
     u8 type6;                  ///< Set to hard-coded value 0x68 (same as the data for ::BtdrvBluetoothPropertyType_Unknown6).
 } BtdrvAdapterProperty;
@@ -150,6 +234,12 @@ typedef struct {
     u8 unk_xC8;                                      ///< Unknown
     u8 pad5[3];                                      ///< Padding
 } BtdrvBleAdvertisePacketData;
+
+typedef struct {
+    u8 length;
+    u8 type;
+    u8 value[0x1d];
+} BtdrvBleAdvertisementData;
 
 /// BleAdvertiseFilter
 typedef struct {

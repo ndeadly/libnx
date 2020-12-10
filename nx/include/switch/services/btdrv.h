@@ -11,6 +11,192 @@
 #include "../services/set.h"
 #include "../sf/service.h"
 
+typedef struct {
+    union {
+        // Pre 9.0.0
+        struct {
+            u16 size;
+            u8 _unk0;
+            BtdrvAddress address;
+            u8 _unk1[3];
+        } v1;
+        // 9.0.0+
+        struct {
+            u8 _unk0[5];
+            BtdrvAddress address;
+            u8 _unk1;
+        } v9;
+    };
+    
+    BtdrvHidReport report;
+} BtdrvHidReportData;   // Probably should come up with a better name for this
+
+/// Data for \ref btdrvGetEventInfo. The data stored here depends on the \ref BtdrvEventType.
+typedef struct {
+    union {
+        u8 data[0x480];
+
+        struct __attribute__ ((__packed__)) {
+            char name[0xf9];
+            BtdrvAddress address;
+            u8 uuid[0x10];
+            BtdrvDeviceClass cod;
+            /* + more items we don't care about */
+            u8 _unk0;
+            u8 _unk1[0x252];
+            u32 _unk2;
+        } device_found;
+        
+        struct {
+            BtdrvBluetoothDiscoveryState state;
+        } discovery_state;
+        
+        struct {
+            BtdrvAddress address;
+            char name[0xf9];
+            BtdrvDeviceClass cod;
+        } pin_reply;
+        
+        struct {
+            BtdrvAddress address;
+            char name[0xf9];
+            BtdrvDeviceClass cod;
+            BtdrvBluetoothSspVariant variant;
+            u32 passkey;
+        } ssp_reply;
+        
+        union {
+            struct {
+                BtdrvAddress address;
+                u32 status;
+                BtdrvBluetoothBondState state;
+            };
+            struct {
+                u32 status;
+                BtdrvAddress address;
+                BtdrvBluetoothBondState state;
+            } v2;
+        } bond_state;
+    };
+} BtdrvEventInfo;
+
+/// Data for \ref btdrvGetHidEventInfo. The data stored here depends on the \ref BtdrvHidEventType.
+typedef struct {
+    union {
+        u8 data[0x480];
+
+        struct {
+            BtdrvAddress address;
+            BtdrvHidConnectionState state;
+        } connection_state;
+
+        struct {
+            BtdrvAddress address;
+            u32 status;
+            u32 report_length;
+            BtdrvHidReportData report_data;
+        } get_report;
+
+        union {
+            struct {
+                BtdrvAddress address;
+                u32 unk_x8;
+                u32 unk_xC;
+            } v1;
+            struct {
+                u32 unk_x0;
+                u32 unk_x4;
+                BtdrvAddress address;
+            } v9;
+        } type7;
+    };
+} BtdrvHidEventInfo;
+
+/// Data for \ref btdrvGetBleManagedEventInfo. The data stored here depends on the \ref BtdrvBleEventType.
+typedef struct {
+    union {
+        u8 data[0x400];
+
+        struct {
+            u32 status;
+            u32 conn_id;
+            u32 unk_x8;
+            u32 unk_xC;
+        } type2;
+
+        struct {
+            u32 conn_id;
+            u16 min_interval;
+            u16 max_interval;
+            u16 slave_latency;
+            u16 timeout_multiplier;
+        } type3; // Connection params
+
+        struct {
+            u32 status;
+            u8 unk_x4;
+            u8 unk_x5;
+            u8 unk_x6;
+            u8 unk_x7;
+            u32 conn_id;
+            BtdrvAddress address;
+            u16 unk_x12;
+        } type4; // Connection event
+
+        struct {
+            u32 status;
+            u8 unk_x4;
+            u8 unk_x5;
+            u8 unk_x6;
+            BtdrvAddress address;
+            BtdrvBleAdvertisementData adv[10];
+            u8 count;
+            u32 unk_x144;
+        } type6; // Scan result
+
+        struct {
+            u32 status;
+            u32 conn_id;
+        } type7;
+
+        struct {
+            u32 status;
+            u32 conn_id;
+            u32 unk_x8;
+            BtdrvGattAttributeUuid svc_uuid;
+            BtdrvGattAttributeUuid char_uuid;
+            BtdrvGattAttributeUuid descr_uuid;
+            u16 size;
+            u8 data[0x202];
+        } type8; // Notification
+
+        struct {
+            u32 status;
+            u32 conn_id;
+            u32 unk_x8;
+            u8 unk_xC[0x140];
+        } type9;
+
+        struct {
+            u32 status;
+            u32 conn_id;
+            u8 unk_x8[0x24];
+            u32 unk_x2C;
+            u8 unk_x30[0x11c];
+        } type10;
+
+        struct {
+            u32 status;
+            u32 conn_id;
+            u16 unk_x8;
+        } type11;
+
+        struct {
+            u8 unk_x0[0x218];
+        } type13;
+    };
+} BtdrvBleEventInfo;
+
 /// Data for \ref btdrvGetHidReportEventInfo. The data stored here depends on the \ref BtdrvHidEventType.
 typedef struct {
     union {
@@ -23,7 +209,7 @@ typedef struct {
             u8 pad;                      ///< Padding
             u16 size;                    ///< Size of the below data.
             u8 data[];                   ///< Data.
-        } type4;                         ///< ::BtdrvHidEventType_Unknown4
+        } get_report;                    ///< ::BtdrvHidEventType_GetReport
 
         struct {
             union {
@@ -91,7 +277,7 @@ typedef struct {
                 u16 size;                        ///< Size of the below data.
                 u8 data[];                       ///< Data.
             } v9;                                ///< [9.0.0+]
-        } type4;                                 ///< ::BtdrvHidEventType_Unknown4
+        } get_report;                            ///< ::BtdrvHidEventType_GetReport
 
         struct {
             u8 data[0xC];                        ///< Raw data.
@@ -345,9 +531,9 @@ Result btdrvSetTsi(BtdrvAddress addr, u8 unk);
  * @brief EnableBurstMode
  * @note This is used by btm-sysmodule.
  * @param[in] addr \ref BtdrvAddress
- * @param[in] flag Flag
+ * @param[in] enable Flag
  */
-Result btdrvEnableBurstMode(BtdrvAddress addr, bool flag);
+Result btdrvEnableBurstMode(BtdrvAddress addr, bool enable);
 
 /**
  * @brief SetZeroRetransmission
@@ -361,9 +547,9 @@ Result btdrvSetZeroRetransmission(BtdrvAddress addr, u8 *buf, u8 count);
 /**
  * @brief EnableMcMode
  * @note This is used by btm-sysmodule.
- * @param[in] flag Flag
+ * @param[in] enable Flag
  */
-Result btdrvEnableMcMode(bool flag);
+Result btdrvEnableMcMode(bool enable);
 
 /**
  * @brief EnableLlrScan
@@ -380,9 +566,9 @@ Result btdrvDisableLlrScan(void);
 /**
  * @brief EnableRadio
  * @note This is used by btm-sysmodule.
- * @param[in] flag Flag
+ * @param[in] enable Flag
  */
-Result btdrvEnableRadio(bool flag);
+Result btdrvEnableRadio(bool enable);
 
 /**
  * @brief SetVisibility
@@ -396,9 +582,9 @@ Result btdrvSetVisibility(bool discoverable, bool connectable);
  * @brief EnableTbfcScan
  * @note Only available on [4.0.0+].
  * @note This is used by btm-sysmodule.
- * @param[in] flag Flag
+ * @param[in] enable Flag
  */
-Result btdrvEnableTbfcScan(bool flag);
+Result btdrvEnableTbfcScan(bool enable);
 
 /**
  * @brief RegisterHidReportEvent
@@ -445,9 +631,9 @@ Result btdrvGetChannelMap(BtdrvChannelMapList *out);
 /**
  * @brief EnableTxPowerBoostSetting
  * @note Only available on [3.0.0+].
- * @param[in] flag Input flag.
+ * @param[in] enable Input flag.
  */
-Result btdrvEnableTxPowerBoostSetting(bool flag);
+Result btdrvEnableTxPowerBoostSetting(bool enable);
 
 /**
  * @brief IsTxPowerBoostSettingEnabled
@@ -461,7 +647,7 @@ Result btdrvIsTxPowerBoostSettingEnabled(bool *out);
  * @note Only available on [3.0.0+].
  * @param[in] flag Input flag.
  */
-Result btdrvEnableAfhSetting(bool flag);
+Result btdrvEnableAfhSetting(bool enable);
 
 /**
  * @brief IsAfhSettingEnabled
@@ -586,9 +772,9 @@ Result btdrvDeleteBleScanFilterCondition(const BtdrvBleAdvertiseFilter *filter);
 /**
  * @brief DeleteBleScanFilter
  * @note Only available on [5.0.0+].
- * @param[in] unk Unknown
+ * @param[in] index Unknown
  */
-Result btdrvDeleteBleScanFilter(u8 unk);
+Result btdrvDeleteBleScanFilter(u8 index);
 
 /**
  * @brief ClearBleScanFilters
@@ -601,9 +787,9 @@ Result btdrvClearBleScanFilters(void);
  * @brief EnableBleScanFilter
  * @note Only available on [5.0.0+].
  * @note This is used by btm-sysmodule.
- * @param[in] flag Flag
+ * @param[in] enable Flag
  */
-Result btdrvEnableBleScanFilter(bool flag);
+Result btdrvEnableBleScanFilter(bool enable);
 
 /**
  * @brief RegisterGattClient
@@ -616,9 +802,9 @@ Result btdrvRegisterGattClient(const BtdrvGattAttributeUuid *uuid);
 /**
  * @brief UnregisterGattClient
  * @note Only available on [5.0.0+].
- * @param[in] unk Unknown
+ * @param[in] interface Unknown
  */
-Result btdrvUnregisterGattClient(u8 unk);
+Result btdrvUnregisterGattClient(u8 interface);
 
 /**
  * @brief UnregisterAllGattClients
@@ -630,22 +816,22 @@ Result btdrvUnregisterAllGattClients(void);
  * @brief ConnectGattServer
  * @note Only available on [5.0.0+].
  * @note This is used by btm-sysmodule.
- * @param[in] unk Unknown
+ * @param[in] interface Unknown
  * @param[in] addr \ref BtdrvAddress
- * @param[in] flag Flag
+ * @param[in] is_direct Flag
  * @param[in] AppletResourceUserId AppletResourceUserId
  */
-Result btdrvConnectGattServer(u8 unk, BtdrvAddress addr, bool flag, u64 AppletResourceUserId);
+Result btdrvConnectGattServer(u8 interface, BtdrvAddress addr, bool is_direct, u64 AppletResourceUserId);
 
 /**
  * @brief CancelConnectGattServer
  * @note Only available on [5.1.0+].
  * @note This is used by btm-sysmodule.
- * @param[in] unk Unknown
+ * @param[in] interface Unknown
  * @param[in] addr \ref BtdrvAddress
  * @param[in] flag Flag
  */
-Result btdrvCancelConnectGattServer(u8 unk, BtdrvAddress addr, bool flag);
+Result btdrvCancelConnectGattServer(u8 interface, BtdrvAddress addr, bool flag);
 
 /**
  * @brief DisconnectGattServer
