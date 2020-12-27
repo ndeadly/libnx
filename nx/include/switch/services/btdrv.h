@@ -34,7 +34,7 @@ typedef struct {
 /// Data for \ref btdrvGetEventInfo. The data stored here depends on the \ref BtdrvEventType.
 typedef struct {
     union {
-        u8 data[0x480];
+        u8 data[0x400];
 
         struct __attribute__ ((__packed__)) {
             char name[0xf9];
