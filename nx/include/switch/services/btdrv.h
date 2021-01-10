@@ -119,6 +119,12 @@ typedef struct {
 
         struct {
             u32 status;
+            u8 handle;
+            bool registered;
+        } type0;
+
+        struct {
+            u32 status;
             u32 conn_id;
             u32 unk_x8;
             u32 unk_xC;
