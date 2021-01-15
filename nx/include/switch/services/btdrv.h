@@ -167,7 +167,9 @@ typedef struct {
 
         struct {
             u32 status;
-            u32 conn_id;
+            u8 interface;
+            u8 unk_x5;
+            u16 unk_x6;
             u32 unk_x8;
             BtdrvGattAttributeUuid svc_uuid;
             BtdrvGattAttributeUuid char_uuid;
