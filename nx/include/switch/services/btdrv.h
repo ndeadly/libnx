@@ -11,26 +11,6 @@
 #include "../services/set.h"
 #include "../sf/service.h"
 
-typedef struct {
-    union {
-        // Pre 9.0.0
-        struct {
-            u16 size;
-            u8 _unk0;
-            BtdrvAddress address;
-            u8 _unk1[3];
-        } v1;
-        // 9.0.0+
-        struct {
-            u8 _unk0[5];
-            BtdrvAddress address;
-            u8 _unk1;
-        } v9;
-    };
-    
-    BtdrvHidReport report;
-} BtdrvHidReportData;   // Probably should come up with a better name for this
-
 /// Data for \ref btdrvGetEventInfo. The data stored here depends on the \ref BtdrvEventType.
 typedef struct {
     union {
@@ -90,13 +70,6 @@ typedef struct {
             BtdrvHidConnectionState state;
         } connection_state;
 
-        struct {
-            BtdrvAddress address;
-            u32 status;
-            u32 report_length;
-            BtdrvHidReportData report_data;
-        } get_report;
-
         union {
             struct {
                 BtdrvAddress address;
@@ -111,6 +84,219 @@ typedef struct {
         } type7;
     };
 } BtdrvHidEventInfo;
+
+typedef struct {
+    union {
+        // Pre 9.0.0
+        struct {
+            u16 size;
+            u8 _unk0;
+            BtdrvAddress address;
+            u8 _unk1[3];
+        } v1;
+        // 9.0.0+
+        struct {
+            u8 _unk0[5];
+            BtdrvAddress address;
+            u8 _unk1;
+        } v9;
+    };
+    
+    BtdrvHidReport report;
+} BtdrvHidReportData;   // Probably should come up with a better name for this
+
+/// Data for \ref btdrvGetHidReportEventInfo. The data stored here depends on the \ref BtdrvHidEventType.
+typedef struct {
+    union {
+        u8 data[0x480];                  ///< Raw data.
+
+        /*
+        // Original 
+        struct {
+            BtdrvAddress addr;
+            u32 res;
+            u32 size;
+            BtdrvHidReportData data;
+        } data_report;
+        */
+
+        /*
+        // This just looks to be the v9 report
+        struct {
+            u32 res;                     ///< Always 0.
+            u8 unk_x4;                   ///< Always 0.
+            BtdrvAddress addr;           ///< \ref BtdrvAddress
+            u8 pad;                      ///< Padding
+            //u16 size;                    ///< Size of the below data.
+            //u8 data[];                   ///< Data.
+            BtdrvHidData report;         ///< \ref BtdrvHidData
+        } data_report;                   ///< ::BtdrvHidEventType_DataReport
+        */
+
+        struct {
+            union {
+                struct {
+                    struct {
+                        BtdrvAddress addr;
+                        //u8 pad[2]; // Todo: check if padding used here
+                        u32 res;
+                        u32 size;
+                    } hdr;
+                    u8 unused[0x3];                  ///< Unused
+                    BtdrvAddress addr;               ///< \ref BtdrvAddress
+                    u8 unused2[0x3];                 ///< Unused
+                    //u16 size;                        ///< Size of the below data.
+                    //u8 data[];                       ///< Data.
+                    BtdrvHidData report;
+                } v1;                                ///< Pre-7.0.0
+
+                struct {
+                    u8 unused[0x3];                  ///< Unused
+                    BtdrvAddress addr;               ///< \ref BtdrvAddress
+                    u8 unused2[0x3];                 ///< Unused
+                    //u16 size;                        ///< Size of the below data.
+                    //u8 data[];                       ///< Data.
+                    BtdrvHidData report;
+                } v7;                                ///< Pre-9.0.0
+
+                struct {
+                    //u8 unused[0x5];                  ///< Unused
+                    u32 res;                         //< Always 0.
+                    u8 unk_x4;                       ///< Always 0.
+                    BtdrvAddress addr;               ///< \ref BtdrvAddress
+                    u8 pad;                          ///< Padding
+                    //u16 size;                        ///< Size of the below data.
+                    //u8 data[];                       ///< Data.
+                    BtdrvHidReport report;
+                } v9;                                ///< [9.0.0+]
+            };
+        } data_report;                           ///< ::BtdrvHidEventType_DataReport
+
+        struct {
+            union {
+                u8 rawdata[0xC];                 ///< Raw data.
+
+                struct {
+                    u32 res;                     ///< 0 = success, non-zero = error.
+                    BtdrvAddress addr;           ///< \ref BtdrvAddress
+                    u8 pad[2];                   ///< Padding
+                };
+            };
+        } set_report;                            ///< ::BtdrvHidEventType_SetReport
+
+        struct {
+            union {
+                union {
+                    u8 rawdata[0x290];           ///< Raw data.
+
+                    struct {
+                        BtdrvAddress addr;       ///< \ref BtdrvAddress
+                        u8 pad[2];               ///< Padding
+                        u32 res;                 ///< Unknown. hid-sysmodule only uses the below data when this field is 0.
+                        BtdrvHidData report;     ///< \ref BtdrvHidData
+                        u8 pad2[2];              ///< Padding
+                    };
+                } v1;                            ///< Pre-9.0.0
+
+                union {
+                    u8 rawdata[0x2C8];           ///< Raw data.
+
+                    struct {
+                        u32 res;                 ///< Unknown. hid-sysmodule only uses the below report when this field is 0.
+                        BtdrvAddress addr;       ///< \ref BtdrvAddress
+                        BtdrvHidReport report;   ///< \ref BtdrvHidReport
+                    };
+                } v9;                            ///< [9.0.0+]
+            };
+        } get_report;                            ///< ::BtdrvHidEventType_GetReport
+    };
+} BtdrvHidReportEventInfo;
+
+/// The raw sharedmem data for HidReportEventInfo.
+typedef struct {
+    struct {
+        u8 type;                                 ///< \ref BtdrvHidEventType
+        u8 pad[7];
+        u64 tick;
+        u64 size;
+    } hdr;
+
+    union {
+        struct {
+            union {
+                struct {
+                    u8 unused[0x3];                  ///< Unused
+                    BtdrvAddress addr;               ///< \ref BtdrvAddress
+                    u8 unused2[0x3];                 ///< Unused
+                    //u16 size;                        ///< Size of the below data.
+                    //u8 data[];                       ///< Data.
+                    BtdrvHidData report;
+                } v7;                                ///< Pre-9.0.0
+
+                struct {
+                    //u8 unused[0x5];                  ///< Unused
+                    u32 res;                         //< Always 0.
+                    u8 unk_x4;                       ///< Always 0.
+                    BtdrvAddress addr;               ///< \ref BtdrvAddress
+                    u8 pad;                          ///< Padding
+                    //u16 size;                        ///< Size of the below data.
+                    //u8 data[];                       ///< Data.
+                    BtdrvHidReport report;
+                } v9;                                ///< [9.0.0+]
+            };
+        } data_report;                           ///< ::BtdrvHidEventType_DataReport
+
+        struct {
+            union {
+                u8 rawdata[0xC];                 ///< Raw data.
+
+                struct {
+                    u32 res;                     ///< 0 = success, non-zero = error.
+                    BtdrvAddress addr;           ///< \ref BtdrvAddress
+                    u8 pad[2];                   ///< Padding
+                };
+            };
+        } set_report;                            ///< ::BtdrvHidEventType_SetReport
+
+        struct {
+            union {
+                struct {
+                    u8 rawdata[0x290];           ///< Raw data.
+
+                    struct {
+                        BtdrvAddress addr;       ///< \ref BtdrvAddress
+                        u8 pad[2];               ///< Padding
+                        u32 res;                 ///< Unknown. hid-sysmodule only uses the below data when this field is 0.
+                        BtdrvHidData report;     ///< \ref BtdrvHidData
+                        u8 pad2[2];              ///< Padding
+                    };
+                } v1;                            ///< Pre-9.0.0
+
+                struct {
+                    u8 rawdata[0x2C8];           ///< Raw data.
+
+                    struct {
+                        u32 res;                 ///< Unknown. hid-sysmodule only uses the below report when this field is 0.
+                        BtdrvAddress addr;       ///< \ref BtdrvAddress
+                        BtdrvHidReport report;   ///< \ref BtdrvHidReport
+                    };
+                } v9;                            ///< [9.0.0+]
+            };
+        } get_report;                            ///< ::BtdrvHidEventType_GetReport
+    } data;
+} BtdrvHidReportEventInfoBufferData;
+
+/// CircularBuffer
+typedef struct {
+    Mutex mutex;
+    void* event_type;          ///< Not set with sharedmem.
+    u8 data[0x2710];
+    s32 write_offset;
+    s32 read_offset;
+    u64 utilization;
+    char name[0x11];
+    u8 initialized;
+} BtdrvCircularBuffer;
 
 /// Data for \ref btdrvGetBleManagedEventInfo. The data stored here depends on the \ref BtdrvBleEventType.
 typedef struct {
@@ -147,7 +333,7 @@ typedef struct {
             u32 conn_id;
             BtdrvAddress address;
             u16 unk_x12;
-        } type4; // Connection event
+        } type4; // Connection status
 
         struct {
             u32 status;
@@ -204,118 +390,6 @@ typedef struct {
         } type13;
     };
 } BtdrvBleEventInfo;
-
-/// Data for \ref btdrvGetHidReportEventInfo. The data stored here depends on the \ref BtdrvHidEventType.
-typedef struct {
-    union {
-        u8 data[0x480];                  ///< Raw data.
-
-        struct {
-            u32 unk_x0;                  ///< Always 0.
-            u8 unk_x4;                   ///< Always 0.
-            BtdrvAddress addr;           ///< \ref BtdrvAddress
-            u8 pad;                      ///< Padding
-            u16 size;                    ///< Size of the below data.
-            u8 data[];                   ///< Data.
-        } get_report;                    ///< ::BtdrvHidEventType_GetReport
-
-        struct {
-            union {
-                u8 data[0xC];                ///< Raw data.
-
-                struct {
-                    u32 res;                 ///< 0 = success, non-zero = error.
-                    BtdrvAddress addr;       ///< \ref BtdrvAddress
-                    u8 pad[2];               ///< Padding
-                };
-            };
-        } type8;                             ///< ::BtdrvHidEventType_Unknown8
-
-        struct {
-            union {
-                union {
-                    u8 rawdata[0x290];           ///< Raw data.
-
-                    struct {
-                        BtdrvAddress addr;       ///< \ref BtdrvAddress
-                        u8 pad[2];               ///< Padding
-                        u32 unk_x0;              ///< Unknown. hid-sysmodule only uses the below data when this field is 0.
-                        BtdrvHidData data;       ///< \ref BtdrvHidData
-                        u8 pad2[2];              ///< Padding
-                    };
-                } hid_data;                      ///< Pre-9.0.0
-
-                union {
-                    u8 rawdata[0x2C8];           ///< Raw data.
-
-                    struct {
-                        u32 unk_x0;              ///< Unknown. hid-sysmodule only uses the below report when this field is 0.
-                        BtdrvAddress addr;       ///< \ref BtdrvAddress
-                        BtdrvHidReport report;   ///< \ref BtdrvHidReport
-                    };
-                } hid_report;                    ///< [9.0.0+]
-            };
-        } type9;                                 ///< ::BtdrvHidEventType_Unknown9
-    };
-} BtdrvHidReportEventInfo;
-
-/// The raw sharedmem data for HidReportEventInfo.
-typedef struct {
-    struct {
-        u8 type;                                 ///< \ref BtdrvHidEventType
-        u8 pad[7];
-        u64 tick;
-        u64 size;
-    } hdr;
-
-    union {
-        struct {
-            struct {
-                u8 unused[0x3];                  ///< Unused
-                BtdrvAddress addr;               ///< \ref BtdrvAddress
-                u8 unused2[0x3];                 ///< Unused
-                u16 size;                        ///< Size of the below data.
-                u8 data[];                       ///< Data.
-            } v1;                                ///< Pre-9.0.0
-
-            struct {
-                u8 unused[0x5];                  ///< Unused
-                BtdrvAddress addr;               ///< \ref BtdrvAddress
-                u8 pad;                          ///< Padding
-                u16 size;                        ///< Size of the below data.
-                u8 data[];                       ///< Data.
-            } v9;                                ///< [9.0.0+]
-        } get_report;                            ///< ::BtdrvHidEventType_GetReport
-
-        struct {
-            u8 data[0xC];                        ///< Raw data.
-        } type8;                                 ///< ::BtdrvHidEventType_Unknown8
-
-        struct {
-            union {
-                struct {
-                    u8 rawdata[0x290];           ///< Raw data.
-                } hid_data;                      ///< Pre-9.0.0
-
-                struct {
-                    u8 rawdata[0x2C8];           ///< Raw data.
-                } hid_report;                    ///< [9.0.0+]
-            };
-        } type9;                                 ///< ::BtdrvHidEventType_Unknown9
-    } data;
-} BtdrvHidReportEventInfoBufferData;
-
-/// CircularBuffer
-typedef struct {
-    Mutex mutex;
-    void* event_type;          ///< Not set with sharedmem.
-    u8 data[0x2710];
-    s32 write_offset;
-    s32 read_offset;
-    u64 utilization;
-    char name[0x11];
-    u8 initialized;
-} BtdrvCircularBuffer;
 
 /// Initialize btdrv.
 Result btdrvInitialize(void);

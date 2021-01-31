@@ -81,10 +81,10 @@ typedef enum {
 /// HidEventType
 typedef enum {
     BtdrvHidEventType_ConnectionState       =    0,    ///< Unknown. Only used with \ref btdrvGetHidEventInfo.
-    BtdrvHidEventType_GetReport             =    4,    ///< Unknown.
+    BtdrvHidEventType_DataReport            =    4,    ///< Data Report.
     BtdrvHidEventType_Unknown7              =    7,    ///< Unknown. Only used with \ref btdrvGetHidEventInfo.
-    BtdrvHidEventType_Unknown8              =    8,    ///< Unknown.
-    BtdrvHidEventType_Unknown9              =    9,    ///< Unknown.
+    BtdrvHidEventType_SetReport             =    8,    ///< Set Report.
+    BtdrvHidEventType_GetReport             =    9,    ///< Get Report.
 } BtdrvHidEventType;
 
 /// BleEventType

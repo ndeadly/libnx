@@ -416,31 +416,34 @@ Result btdrvGetHidReportEventInfo(void* buffer, size_t size, BtdrvHidEventType *
         if (g_btdrvCircularBuffer==NULL) return MAKERESULT(Module_Libnx, LibnxError_NotInitialized);
         for (; (data_ptr = btdrvCircularBufferRead(g_btdrvCircularBuffer)); btdrvCircularBufferFree(g_btdrvCircularBuffer)) {
             *type = data_ptr->hdr.type;
-            if (*type == BtdrvHidEventType_GetReport) {
+            if (*type == BtdrvHidEventType_DataReport) {
                 if (armTicksToNs(armGetSystemTick() - data_ptr->hdr.tick) >= 100000001) continue;
             }
             break;
         }
         if (data_ptr == NULL) {
-            *type = BtdrvHidEventType_GetReport;
+            *type = BtdrvHidEventType_DataReport;
             return 0;
         }
-        if (*type == BtdrvHidEventType_Unknown9) {
-            if (hosversionBefore(9,0,0)) memcpy(info->type9.hid_data.rawdata, data_ptr->data.type9.hid_data.rawdata, sizeof(info->type9.hid_data.rawdata));
-            else memcpy(info->type9.hid_report.rawdata, data_ptr->data.type9.hid_report.rawdata, sizeof(info->type9.hid_report.rawdata));
+        if (*type == BtdrvHidEventType_GetReport) {
+            if (hosversionBefore(9,0,0)) memcpy(info->get_report.v1.rawdata, data_ptr->data.get_report.v1.rawdata, sizeof(info->get_report.v1.rawdata));
+            else memcpy(info->get_report.v9.rawdata, data_ptr->data.get_report.v9.rawdata, sizeof(info->get_report.v9.rawdata));
         }
-        else if (*type == BtdrvHidEventType_Unknown8) memcpy(info->type8.data, data_ptr->data.type8.data, sizeof(info->type8.data));
-        else if (*type == BtdrvHidEventType_GetReport) {
-            u16 tmpsize = hosversionBefore(9,0,0) ? data_ptr->data.get_report.v1.size : data_ptr->data.get_report.v9.size;
+        else if (*type == BtdrvHidEventType_SetReport) memcpy(info->set_report.rawdata, data_ptr->data.set_report.rawdata, sizeof(info->set_report.rawdata));
+        else if (*type == BtdrvHidEventType_DataReport) {
+            u16 tmpsize = hosversionBefore(9,0,0) ? data_ptr->data.data_report.v7.report.size : data_ptr->data.data_report.v9.report.size;
             if (size < 0xE) return MAKERESULT(Module_Libnx, LibnxError_BadInput);
             if (tmpsize > size-0xE) tmpsize = size-0xE;
-            info->get_report.unk_x0 = 0;
-            info->get_report.size = tmpsize;
-            if (hosversionBefore(9,0,0)) memcpy(info->get_report.data, data_ptr->data.get_report.v1.data, tmpsize);
-            else memcpy(info->get_report.data, data_ptr->data.get_report.v9.data, tmpsize);
+            if (hosversionBefore(9,0,0)) info->data_report.v7.report.size = tmpsize;
+            else {
+                info->data_report.v9.res = 0;
+                info->data_report.v9.report.size = tmpsize;
+            }
+            if (hosversionBefore(9,0,0)) memcpy(info->data_report.v7.report.data, data_ptr->data.data_report.v7.report.data, tmpsize);
+            else memcpy(info->data_report.v9.report.data, data_ptr->data.data_report.v9.report.data, tmpsize);
 
-            if (hosversionBefore(9,0,0)) memcpy(&info->get_report.addr, &data_ptr->data.get_report.v1.addr, sizeof(BtdrvAddress));
-            else memcpy(&info->get_report.addr, &data_ptr->data.get_report.v9.addr, sizeof(BtdrvAddress));
+            if (hosversionBefore(9,0,0)) memcpy(&info->data_report.v7.addr, &data_ptr->data.data_report.v7.addr, sizeof(BtdrvAddress));
+            else memcpy(&info->data_report.v9.addr, &data_ptr->data.data_report.v9.addr, sizeof(BtdrvAddress));
         }
         else return MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen); // sdknso would Abort here.
         btdrvCircularBufferFree(g_btdrvCircularBuffer);
