@@ -134,7 +134,7 @@ typedef struct {
                 struct {
                     struct {
                         BtdrvAddress addr;
-                        u8 pad[2]; // Todo: check if padding used here
+                        u8 pad[2];
                         u32 res;
                         u32 size;
                     } hdr;
@@ -152,7 +152,7 @@ typedef struct {
                 } v7;                                ///< Pre-9.0.0
 
                 struct {
-                    u32 res;                         //< Always 0.
+                    u32 res;                         ///< Always 0.
                     u8 unk_x4;                       ///< Always 0.
                     BtdrvAddress addr;               ///< \ref BtdrvAddress
                     u8 pad;                          ///< Padding
